@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>QBR Builder — Preview</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  body { font-family: system-ui, sans-serif; }
+  .fade-in { animation: fadeIn 0.4s ease; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+  @media print { #toolbar { display:none; } }
+</style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100">
+
+<!-- HEADER -->
+<header class="bg-white border-b border-gray-200 px-6 py-4 print:hidden" id="toolbar">
+  <div class="max-w-4xl mx-auto flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <span class="text-2xl">📊</span>
+      <div>
+        <h1 class="font-bold text-gray-900">QBR Builder</h1>
+        <p class="text-xs text-gray-500">Quarterly Business Review Generator</p>
+      </div>
+    </div>
+    <div id="report-actions" class="hidden flex gap-2">
+      <button onclick="showUpload()" class="text-sm px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 text-gray-600 cursor-pointer">← New Report</button>
+      <button onclick="window.print()" class="text-sm px-4 py-2 rounded-lg bg-slate-800 text-white hover:bg-slate-700 font-medium cursor-pointer">Export PDF</button>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-4xl mx-auto px-6 py-8">
+
+  <!-- ===== UPLOAD STEP ===== -->
+  <div id="upload-step">
+    <div class="mb-8 text-center">
+      <h2 class="text-2xl font-bold text-gray-900 mb-2">Build Your QBR</h2>
+      <p class="text-gray-500">Upload your CSV files or load sample data to generate a report.</p>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-xl p-5 mb-6">
+      <h3 class="font-semibold text-gray-800 mb-4">Report Info</h3>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Company / Team Name</label>
+          <input id="company" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400" placeholder="Acme Corp" value="Acme Corp"/>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Quarter</label>
+          <input id="quarter" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400" placeholder="Q1 2025" value="Q1 2025"/>
+        </div>
+      </div>
+    </div>
+
+    <div class="space-y-4 mb-6">
+      <h3 class="font-semibold text-gray-800">Upload Data Files</h3>
+      <div id="kpi-drop" ondragover="ev(event)" ondrop="drop(event,'kpi')" onclick="document.getElementById('kpi-file').click()" class="border-2 border-dashed rounded-xl p-5 transition-colors cursor-pointer border-gray-300 hover:border-gray-400 bg-white">
+        <input id="kpi-file" type="file" accept=".csv" class="hidden" onchange="loadFile(event,'kpi')"/>
+        <div class="flex items-center gap-3">
+          <span id="kpi-icon" class="text-2xl">📂</span>
+          <div>
+            <p class="font-semibold text-gray-800">KPI Data</p>
+            <p class="text-sm text-gray-500">CSV: metric, target, actual, unit</p>
+            <p id="kpi-status" class="text-xs text-gray-400 mt-1 font-mono">metric,target,actual,unit</p>
+          </div>
+        </div>
+      </div>
+      <div id="okr-drop" ondragover="ev(event)" ondrop="drop(event,'okr')" onclick="document.getElementById('okr-file').click()" class="border-2 border-dashed rounded-xl p-5 transition-colors cursor-pointer border-gray-300 hover:border-gray-400 bg-white">
+        <input id="okr-file" type="file" accept=".csv" class="hidden" onchange="loadFile(event,'okr')"/>
+        <div class="flex items-center gap-3">
+          <span id="okr-icon" class="text-2xl">📂</span>
+          <div>
+            <p class="font-semibold text-gray-800">OKR / Goals Data</p>
+            <p class="text-sm text-gray-500">CSV: objective, key_result, target, actual, unit</p>
+            <p id="okr-status" class="text-xs text-gray-400 mt-1 font-mono">objective,key_result,target,actual,unit</p>
+          </div>
+        </div>
+      </div>
+      <div id="budget-drop" ondragover="ev(event)" ondrop="drop(event,'budget')" onclick="document.getElementById('budget-file').click()" class="border-2 border-dashed rounded-xl p-5 transition-colors cursor-pointer border-gray-300 hover:border-gray-400 bg-white">
+        <input id="budget-file" type="file" accept=".csv" class="hidden" onchange="loadFile(event,'budget')"/>
+        <div class="flex items-center gap-3">
+          <span id="budget-icon" class="text-2xl">📂</span>
+          <div>
+            <p class="font-semibold text-gray-800">Budget Data</p>
+            <p class="text-sm text-gray-500">CSV: category, budgeted, actual</p>
+            <p id="budget-status" class="text-xs text-gray-400 mt-1 font-mono">category,budgeted,actual</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="data-summary" class="hidden bg-white border border-gray-200 rounded-xl p-4 mb-6 text-sm text-gray-600"></div>
+    <div id="error-box" class="hidden bg-red-50 border border-red-200 rounded-lg p-3 mb-4 text-sm text-red-700"></div>
+
+    <button onclick="loadSample()" class="w-full mb-3 py-3 rounded-xl border-2 border-slate-300 text-slate-700 font-semibold hover:bg-slate-50 transition-colors cursor-pointer">
+      ✨ Load Sample Data
+    </button>
+    <button id="gen-btn" onclick="generateReport()" disabled class="w-full py-3 rounded-xl bg-slate-800 text-white font-semibold hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 cursor-pointer">
+      Generate QBR Report →
+    </button>
+
+    <div class="mt-6 bg-blue-50 border border-blue-100 rounded-xl p-4 text-xs text-blue-700">
+      <p class="font-semibold mb-1">💡 No CSV files? Click "Load Sample Data" to see a full demo report instantly.</p>
+      <p>In the real app, Claude AI writes the executive summary and insights. Here a static summary is shown.</p>
+    </div>
+  </div>
+
+  <!-- ===== REPORT STEP ===== -->
+  <div id="report-step" class="hidden fade-in">
+
+    <!-- Header card -->
+    <div class="bg-gradient-to-br from-slate-800 to-slate-700 text-white rounded-2xl p-6 mb-8">
+      <p class="text-xs uppercase tracking-widest text-slate-400 mb-1">Quarterly Business Review</p>
+      <h1 id="r-company" class="text-2xl font-bold mb-1"></h1>
+      <p id="r-quarter" class="text-slate-300"></p>
+    </div>
+
+    <!-- Executive Summary -->
+    <section class="mb-10">
+      <h2 class="text-xl font-bold text-gray-800 mb-3 flex items-center gap-2"><span>📝</span> Executive Summary</h2>
+      <div class="bg-white border border-gray-200 rounded-xl p-5 mb-6">
+        <p id="r-summary" class="text-sm text-gray-700 leading-relaxed"></p>
+      </div>
+      <h2 class="text-xl font-bold text-gray-800 mb-3 flex items-center gap-2"><span>💡</span> Recommendations</h2>
+      <div class="bg-amber-50 border border-amber-200 rounded-xl p-5">
+        <div id="r-recommendations" class="text-sm text-gray-700 leading-relaxed space-y-1"></div>
+      </div>
+    </section>
+
+    <!-- KPIs -->
+    <section id="kpi-section" class="mb-10 hidden">
+      <h2 class="text-xl font-bold text-gray-800 mb-1 flex items-center gap-2"><span>📊</span> KPI Performance</h2>
+      <p id="kpi-insight" class="text-sm text-gray-600 mb-4 bg-blue-50 border border-blue-100 rounded-lg p-3"></p>
+      <div class="bg-white border border-gray-200 rounded-xl p-4 mb-4">
+        <canvas id="kpi-chart" height="120"></canvas>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm border-collapse">
+          <thead><tr class="bg-gray-50 border-b border-gray-200">
+            <th class="text-left p-3 font-semibold text-gray-700">Metric</th>
+            <th class="text-right p-3 font-semibold text-gray-700">Target</th>
+            <th class="text-right p-3 font-semibold text-gray-700">Actual</th>
+            <th class="text-right p-3 font-semibold text-gray-700">vs Target</th>
+            <th class="text-center p-3 font-semibold text-gray-700">Status</th>
+          </tr></thead>
+          <tbody id="kpi-table"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- OKRs -->
+    <section id="okr-section" class="mb-10 hidden">
+      <h2 class="text-xl font-bold text-gray-800 mb-1 flex items-center gap-2"><span>🎯</span> Goals & OKRs Review</h2>
+      <p id="okr-insight" class="text-sm text-gray-600 mb-4 bg-purple-50 border border-purple-100 rounded-lg p-3"></p>
+      <div id="okr-cards" class="space-y-5"></div>
+    </section>
+
+    <!-- Budget -->
+    <section id="budget-section" class="mb-10 hidden">
+      <h2 class="text-xl font-bold text-gray-800 mb-1 flex items-center gap-2"><span>💰</span> Budget Variance Analysis</h2>
+      <p id="budget-insight" class="text-sm text-gray-600 mb-4 bg-amber-50 border border-amber-100 rounded-lg p-3"></p>
+      <div id="budget-cards" class="grid grid-cols-3 gap-4 mb-6"></div>
+      <div class="bg-white border border-gray-200 rounded-xl p-4 mb-4">
+        <p class="text-xs text-gray-500 mb-2 font-medium">Variance by Category (Actual − Budget)</p>
+        <canvas id="budget-chart" height="100"></canvas>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm border-collapse">
+          <thead><tr class="bg-gray-50 border-b border-gray-200">
+            <th class="text-left p-3 font-semibold text-gray-700">Category</th>
+            <th class="text-right p-3 font-semibold text-gray-700">Budgeted</th>
+            <th class="text-right p-3 font-semibold text-gray-700">Actual</th>
+            <th class="text-right p-3 font-semibold text-gray-700">Variance</th>
+            <th class="text-right p-3 font-semibold text-gray-700">Variance %</th>
+          </tr></thead>
+          <tbody id="budget-table"></tbody>
+        </table>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<script>
+// ---- State ----
+const state = { kpis:[], okrs:[], budget:[] };
+let kpiChart, budgetChart;
+
+// ---- Drag helpers ----
+function ev(e){ e.preventDefault(); }
+function drop(e, type){ e.preventDefault(); const f=e.dataTransfer.files[0]; if(f) readCSV(f,type); }
+function loadFile(e, type){ const f=e.target.files[0]; if(f) readCSV(f,type); }
+
+function readCSV(file, type){
+  const r=new FileReader();
+  r.onload=e=>parseData(e.target.result, type);
+  r.readAsText(file);
+}
+
+function num(v){ return parseFloat((v||'').replace(/[^0-9.-]/g,''))||0; }
+
+function parseData(csv, type){
+  const {data}=Papa.parse(csv,{header:true,skipEmptyLines:true});
+  if(type==='kpi'){
+    state.kpis=data.map(r=>({metric:r.metric||r.Metric||r.name||'',target:num(r.target||r.Target),actual:num(r.actual||r.Actual),unit:r.unit||r.Unit||''})).filter(r=>r.metric);
+    mark('kpi', state.kpis.length);
+  } else if(type==='okr'){
+    state.okrs=data.map(r=>({objective:r.objective||r.Objective||'',keyResult:r.key_result||r['key result']||r['Key Result']||'',target:num(r.target||r.Target),actual:num(r.actual||r.Actual),unit:r.unit||r.Unit||'%'})).filter(r=>r.objective);
+    mark('okr', state.okrs.length);
+  } else {
+    state.budget=data.map(r=>({category:r.category||r.Category||r.name||'',budgeted:num(r.budgeted||r.Budgeted||r.budget||r.Budget),actual:num(r.actual||r.Actual)})).filter(r=>r.category);
+    mark('budget', state.budget.length);
+  }
+  updateSummary();
+}
+
+function mark(type, n){
+  document.getElementById(type+'-icon').textContent='✅';
+  document.getElementById(type+'-status').textContent=`✓ ${n} rows loaded`;
+  document.getElementById(type+'-drop').classList.add('border-emerald-400','bg-emerald-50');
+  document.getElementById(type+'-drop').classList.remove('border-gray-300','hover:border-gray-400','bg-white');
+}
+
+function updateSummary(){
+  const has=state.kpis.length||state.okrs.length||state.budget.length;
+  const box=document.getElementById('data-summary');
+  if(has){
+    box.classList.remove('hidden');
+    box.innerHTML='Loaded: '
+      +(state.kpis.length?`<span class="font-medium text-gray-800 mr-3">✓ ${state.kpis.length} KPIs</span>`:'')
+      +(state.okrs.length?`<span class="font-medium text-gray-800 mr-3">✓ ${state.okrs.length} Key Results</span>`:'')
+      +(state.budget.length?`<span class="font-medium text-gray-800">✓ ${state.budget.length} Budget lines</span>`:'');
+    document.getElementById('gen-btn').disabled=false;
+  }
+}
+
+// ---- Sample data ----
+function loadSample(){
+  parseData(`metric,target,actual,unit\nMonthly Revenue,500000,487000,$\nCustomer Churn,2,2.8,%\nNPS Score,50,62,\nNew Customers,200,231,\nSupport CSAT,90,88,%`,'kpi');
+  parseData(`objective,key_result,target,actual,unit\nGrow Revenue,Reach $2M ARR,2000000,1948000,$\nGrow Revenue,Expand to 3 new markets,3,2,\nImprove Retention,Reduce churn below 2%,2,2.8,%\nImprove Retention,Launch loyalty program,1,1,\nScale Engineering,Hire 5 engineers,5,4,`,'okr');
+  parseData(`category,budgeted,actual\nEngineering,400000,423000\nMarketing,150000,138000\nSales,200000,197000\nOperations,80000,91000\nProduct,100000,103000`,'budget');
+}
+
+// ---- Static insights (mirrors what Claude would generate) ----
+const INSIGHTS={
+  summary:`Acme Corp closed Q1 2025 with a mixed but largely positive performance. Revenue came in at $487K against a $500K target — a 2.6% miss — driven by slower market expansion than planned. Encouragingly, NPS hit 62 (target: 50) and new customer acquisition exceeded goal by 15.5%, signalling strong product-market fit and healthy top-of-funnel momentum.\n\nRetention remains a concern: churn rose to 2.8% versus the 2% target, outpacing new customer growth in lifetime value terms. Budget discipline was solid in Marketing and Sales, though Engineering and Operations overran by 5.75% and 13.75% respectively, partially due to unplanned infrastructure scaling costs.\n\nOverall, Q1 lays a solid foundation: the pipeline is strong, customer satisfaction is high, and core OKRs are tracking above 80% completion. The priorities for Q2 should be arresting churn and tightening operational spend.`,
+  kpiInsight:`NPS and new customer acquisition exceeded targets by 24% and 15.5% respectively — standout wins. Monthly revenue missed by 2.6% and churn overshot its target by 40%, which together represent the key risk heading into Q2.`,
+  okrInsight:`3 of 5 key results are on track or complete. Revenue ARR is at 97% of target; market expansion (67%) and engineer hiring (80%) are lagging and need focused attention in Q2.`,
+  budgetInsight:`Total spend came in $26K over budget (+3.8%). Engineering (+$23K) and Operations (+$11K) were the largest overruns. Marketing saved $12K, providing partial offset. The overruns are largely one-time infrastructure costs.`,
+  recommendations:[
+    '🎯 Launch a targeted churn-reduction program — identify at-risk accounts and deploy CS resources before Q2 mid-point.',
+    '📈 Accelerate market expansion: two markets remain unopened; assign dedicated BD ownership with a Q2 deadline.',
+    '💰 Audit Engineering and Operations spend — establish monthly budget checkpoints to prevent repeat overruns.',
+    '🚀 Double down on top-of-funnel — NPS of 62 is a referral engine; launch a structured referral program in Q2.',
+    '👥 Fast-track the remaining engineering hire to unblock roadmap capacity for H2 growth initiatives.',
+  ]
+};
+
+// ---- Generate Report ----
+function generateReport(){
+  const company=document.getElementById('company').value||'Company';
+  const quarter=document.getElementById('quarter').value||'Q';
+
+  document.getElementById('r-company').textContent=company;
+  document.getElementById('r-quarter').textContent=quarter;
+  document.getElementById('r-summary').innerHTML=INSIGHTS.summary.replace(/\n\n/g,'</p><p class="text-sm text-gray-700 leading-relaxed mt-3">');
+
+  const recEl=document.getElementById('r-recommendations');
+  recEl.innerHTML=INSIGHTS.recommendations.map(r=>`<p>${r}</p>`).join('');
+
+  renderKPIs();
+  renderOKRs();
+  renderBudget();
+
+  document.getElementById('upload-step').classList.add('hidden');
+  document.getElementById('report-step').classList.remove('hidden');
+  document.getElementById('report-actions').classList.remove('hidden');
+  window.scrollTo(0,0);
+}
+
+function showUpload(){
+  document.getElementById('upload-step').classList.remove('hidden');
+  document.getElementById('report-step').classList.add('hidden');
+  document.getElementById('report-actions').classList.add('hidden');
+}
+
+// ---- KPI Render ----
+function renderKPIs(){
+  if(!state.kpis.length) return;
+  document.getElementById('kpi-section').classList.remove('hidden');
+  document.getElementById('kpi-insight').textContent=INSIGHTS.kpiInsight;
+
+  const labels=state.kpis.map(k=>k.metric);
+  const targets=state.kpis.map(k=>k.target);
+  const actuals=state.kpis.map(k=>k.actual);
+  const colors=state.kpis.map(k=>k.actual>=k.target?'#10b981':'#f87171');
+
+  if(kpiChart) kpiChart.destroy();
+  kpiChart=new Chart(document.getElementById('kpi-chart'),{
+    type:'bar',
+    data:{labels,datasets:[
+      {label:'Target',data:targets,backgroundColor:'#94a3b8',borderRadius:4},
+      {label:'Actual',data:actuals,backgroundColor:colors,borderRadius:4}
+    ]},
+    options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true}}}
+  });
+
+  const tbody=document.getElementById('kpi-table');
+  tbody.innerHTML=state.kpis.map(k=>{
+    const delta=k.target?((k.actual-k.target)/k.target*100):0;
+    const met=k.actual>=k.target;
+    return `<tr class="border-b border-gray-100 hover:bg-gray-50">
+      <td class="p-3 font-medium text-gray-800">${k.metric}</td>
+      <td class="p-3 text-right text-gray-600">${k.target}${k.unit}</td>
+      <td class="p-3 text-right font-semibold text-gray-800">${k.actual}${k.unit}</td>
+      <td class="p-3 text-right font-medium ${met?'text-emerald-600':'text-red-500'}">${delta>=0?'+':''}${delta.toFixed(1)}%</td>
+      <td class="p-3 text-center"><span class="px-2 py-0.5 rounded-full text-xs font-medium ${met?'bg-emerald-100 text-emerald-700':'bg-red-100 text-red-600'}">${met?'On Track':'Off Track'}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ---- OKR Render ----
+function renderOKRs(){
+  if(!state.okrs.length) return;
+  document.getElementById('okr-section').classList.remove('hidden');
+  document.getElementById('okr-insight').textContent=INSIGHTS.okrInsight;
+
+  const grouped={};
+  state.okrs.forEach(r=>{ if(!grouped[r.objective]) grouped[r.objective]=[]; grouped[r.objective].push(r); });
+
+  document.getElementById('okr-cards').innerHTML=Object.entries(grouped).map(([obj,results])=>{
+    const avg=results.reduce((s,r)=>s+(r.target>0?(r.actual/r.target*100):0),0)/results.length;
+    const color=avg>=80?'#10b981':avg>=50?'#f59e0b':'#f87171';
+    const bars=results.map(r=>{
+      const pct=Math.min(100,r.target>0?(r.actual/r.target*100):0);
+      const c=pct>=80?'#10b981':pct>=50?'#f59e0b':'#f87171';
+      return `<div>
+        <div class="flex justify-between text-xs text-gray-600 mb-1"><span>${r.keyResult}</span><span class="font-medium">${r.actual}${r.unit} / ${r.target}${r.unit}</span></div>
+        <div class="flex items-center gap-2">
+          <div class="flex-1 bg-gray-100 rounded-full h-2"><div class="h-2 rounded-full" style="width:${pct}%;background:${c}"></div></div>
+          <span class="text-xs font-medium w-10 text-right" style="color:${c}">${pct.toFixed(0)}%</span>
+        </div>
+      </div>`;
+    }).join('');
+    return `<div class="bg-white border border-gray-200 rounded-xl p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="font-semibold text-gray-800 text-sm">${obj}</h3>
+        <span class="text-xs font-bold px-2 py-0.5 rounded-full" style="background:${color}20;color:${color}">${avg.toFixed(0)}% overall</span>
+      </div>
+      <div class="space-y-3">${bars}</div>
+    </div>`;
+  }).join('');
+}
+
+// ---- Budget Render ----
+function fmt(n){ return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',notation:'compact'}).format(n); }
+
+function renderBudget(){
+  if(!state.budget.length) return;
+  document.getElementById('budget-section').classList.remove('hidden');
+  document.getElementById('budget-insight').textContent=INSIGHTS.budgetInsight;
+
+  const totalB=state.budget.reduce((s,b)=>s+b.budgeted,0);
+  const totalA=state.budget.reduce((s,b)=>s+b.actual,0);
+  const totalV=totalA-totalB;
+
+  document.getElementById('budget-cards').innerHTML=[
+    {label:'Total Budgeted',value:totalB,cls:'text-gray-700'},
+    {label:'Total Actual',value:totalA,cls:'text-gray-700'},
+    {label:'Net Variance',value:totalV,cls:totalV<=0?'text-emerald-600':'text-red-500'},
+  ].map(c=>`<div class="bg-white border border-gray-200 rounded-xl p-4 text-center">
+    <p class="text-xs text-gray-500 mb-1">${c.label}</p>
+    <p class="text-lg font-bold ${c.cls}">${fmt(c.value)}</p>
+  </div>`).join('');
+
+  const labels=state.budget.map(b=>b.category);
+  const variances=state.budget.map(b=>b.actual-b.budgeted);
+  const colors=variances.map(v=>v<=0?'#10b981':'#f87171');
+
+  if(budgetChart) budgetChart.destroy();
+  budgetChart=new Chart(document.getElementById('budget-chart'),{
+    type:'bar',
+    data:{labels,datasets:[{label:'Variance ($)',data:variances,backgroundColor:colors,borderRadius:4}]},
+    options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:false}}}
+  });
+
+  document.getElementById('budget-table').innerHTML=state.budget.map(b=>{
+    const v=b.actual-b.budgeted;
+    const vp=b.budgeted?(v/b.budgeted*100):0;
+    const pos=v<=0;
+    return `<tr class="border-b border-gray-100 hover:bg-gray-50">
+      <td class="p-3 font-medium text-gray-800">${b.category}</td>
+      <td class="p-3 text-right text-gray-600">${fmt(b.budgeted)}</td>
+      <td class="p-3 text-right font-semibold text-gray-800">${fmt(b.actual)}</td>
+      <td class="p-3 text-right font-medium ${pos?'text-emerald-600':'text-red-500'}">${v>0?'+':''}${fmt(v)}</td>
+      <td class="p-3 text-right font-medium ${pos?'text-emerald-600':'text-red-500'}">${vp>0?'+':''}${vp.toFixed(1)}%</td>
+    </tr>`;
+  }).join('');
+}
+</script>
+</body>
+</html>
