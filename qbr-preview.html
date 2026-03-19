@@ -1,228 +1,2194 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>QBR Builder — Preview</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <style>
-  body { font-family: system-ui, sans-serif; }
-  .fade-in { animation: fadeIn 0.4s ease; }
-  @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
-  @media print { #toolbar { display:none; } }
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#f8fafc;color:#1e293b;min-height:100vh}
+h1,h2,h3{font-weight:700}
+input{font-family:inherit}
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px}
+.badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600}
+.badge-green{background:#dcfce7;color:#16a34a}
+.badge-red{background:#fee2e2;color:#dc2626}
+.badge-yellow{background:#fef9c3;color:#ca8a04}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:10px 12px;background:#f8fafc;border-bottom:2px solid #e2e8f0;font-weight:600;color:#64748b;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+td{padding:10px 12px;border-bottom:1px solid #f1f5f9}
+tr:hover td{background:#f8fafc}
+.bar-wrap{background:#f1f5f9;border-radius:999px;height:8px;overflow:hidden;flex:1}
+.bar-fill{height:100%;border-radius:999px;transition:width .6s}
+button{font-family:inherit;cursor:pointer;border:none}
+.btn-primary{background:#1e293b;color:#fff;padding:12px 20px;border-radius:10px;font-weight:600;font-size:14px;width:100%;transition:background .2s}
+.btn-primary:hover{background:#334155}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed}
+.btn-outline{background:#fff;color:#475569;padding:10px 16px;border-radius:8px;font-weight:500;font-size:13px;border:1px solid #cbd5e1}
+.btn-outline:hover{background:#f8fafc}
+.drop-zone{border:2px dashed #cbd5e1;border-radius:12px;padding:20px;cursor:pointer;transition:border-color .2s,background .2s}
+.drop-zone:hover{border-color:#94a3b8;background:#f8fafc}
+.drop-zone.done{border-color:#86efac;background:#f0fdf4}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.summary-card{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:16px;text-align:center}
+.label{font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.big-num{font-size:22px;font-weight:700}
+.section{margin-bottom:40px}
+.insight{font-size:13px;color:#475569;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px 14px;margin-bottom:16px;line-height:1.6}
+.insight.amber{background:#fffbeb;border-color:#fde68a}
+.insight.purple{background:#faf5ff;border-color:#e9d5ff}
+header{background:#fff;border-bottom:1px solid #e2e8f0;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+.hero{background:linear-gradient(135deg,#1e293b,#334155);color:#fff;border-radius:16px;padding:28px;margin-bottom:32px}
+main{max-width:960px;margin:0 auto;padding:28px 24px}
+.hidden{display:none!important}
+.fade{animation:fade .4s}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.progress-row{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.svg-chart{width:100%;overflow:visible}
+@media print{header,#toolbar{display:none}}
 </style>
 </head>
-<body class="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100">
+<body>
 
-<!-- HEADER -->
-<header class="bg-white border-b border-gray-200 px-6 py-4 print:hidden" id="toolbar">
-  <div class="max-w-4xl mx-auto flex items-center justify-between">
-    <div class="flex items-center gap-3">
-      <span class="text-2xl">📊</span>
-      <div>
-        <h1 class="font-bold text-gray-900">QBR Builder</h1>
-        <p class="text-xs text-gray-500">Quarterly Business Review Generator</p>
-      </div>
+<header id="toolbar">
+  <div style="display:flex;align-items:center;gap:10px">
+    <span style="font-size:22px">📊</span>
+    <div>
+      <div style="font-weight:700;font-size:15px">QBR Builder</div>
+      <div style="font-size:11px;color:#94a3b8">Quarterly Business Review Generator</div>
     </div>
-    <div id="report-actions" class="hidden flex gap-2">
-      <button onclick="showUpload()" class="text-sm px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 text-gray-600 cursor-pointer">← New Report</button>
-      <button onclick="window.print()" class="text-sm px-4 py-2 rounded-lg bg-slate-800 text-white hover:bg-slate-700 font-medium cursor-pointer">Export PDF</button>
-    </div>
+  </div>
+  <div id="report-actions" class="hidden" style="display:none;gap:8px">
+    <button class="btn-outline" onclick="showUpload()">← New Report</button>
+    <button class="btn-outline" onclick="window.print()" style="background:#1e293b;color:#fff;border-color:#1e293b">Export PDF</button>
   </div>
 </header>
 
-<main class="max-w-4xl mx-auto px-6 py-8">
+<main>
 
-  <!-- ===== UPLOAD STEP ===== -->
-  <div id="upload-step">
-    <div class="mb-8 text-center">
-      <h2 class="text-2xl font-bold text-gray-900 mb-2">Build Your QBR</h2>
-      <p class="text-gray-500">Upload your CSV files or load sample data to generate a report.</p>
-    </div>
+<!-- UPLOAD -->
+<div id="upload-step">
+  <div style="text-align:center;margin-bottom:28px">
+    <h2 style="font-size:24px;margin-bottom:6px">Build Your QBR</h2>
+    <p style="color:#64748b;font-size:14px">Upload CSVs or load sample data to generate an instant report.</p>
+  </div>
 
-    <div class="bg-white border border-gray-200 rounded-xl p-5 mb-6">
-      <h3 class="font-semibold text-gray-800 mb-4">Report Info</h3>
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label class="block text-xs font-medium text-gray-600 mb-1">Company / Team Name</label>
-          <input id="company" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400" placeholder="Acme Corp" value="Acme Corp"/>
-        </div>
-        <div>
-          <label class="block text-xs font-medium text-gray-600 mb-1">Quarter</label>
-          <input id="quarter" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400" placeholder="Q1 2025" value="Q1 2025"/>
-        </div>
+  <div class="card" style="margin-bottom:16px">
+    <h3 style="font-size:14px;margin-bottom:14px">Report Info</h3>
+    <div class="grid2">
+      <div>
+        <label style="font-size:11px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">COMPANY / TEAM NAME</label>
+        <input id="company" style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;font-size:13px" placeholder="Acme Corp" value="Acme Corp"/>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:600;color:#64748b;display:block;margin-bottom:5px">QUARTER</label>
+        <input id="quarter" style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;font-size:13px" placeholder="Q1 2025" value="Q1 2025"/>
       </div>
     </div>
+  </div>
 
-    <div class="space-y-4 mb-6">
-      <h3 class="font-semibold text-gray-800">Upload Data Files</h3>
-      <div id="kpi-drop" ondragover="ev(event)" ondrop="drop(event,'kpi')" onclick="document.getElementById('kpi-file').click()" class="border-2 border-dashed rounded-xl p-5 transition-colors cursor-pointer border-gray-300 hover:border-gray-400 bg-white">
+  <div style="margin-bottom:16px">
+    <h3 style="font-size:14px;margin-bottom:12px">Upload Data Files</h3>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div id="kpi-drop" class="drop-zone" onclick="document.getElementById('kpi-file').click()">
         <input id="kpi-file" type="file" accept=".csv" class="hidden" onchange="loadFile(event,'kpi')"/>
-        <div class="flex items-center gap-3">
-          <span id="kpi-icon" class="text-2xl">📂</span>
+        <div style="display:flex;align-items:center;gap:12px">
+          <span id="kpi-icon" style="font-size:22px">📂</span>
           <div>
-            <p class="font-semibold text-gray-800">KPI Data</p>
-            <p class="text-sm text-gray-500">CSV: metric, target, actual, unit</p>
-            <p id="kpi-status" class="text-xs text-gray-400 mt-1 font-mono">metric,target,actual,unit</p>
+            <div style="font-weight:600;font-size:13px">KPI Data</div>
+            <div style="font-size:12px;color:#94a3b8">CSV: metric, target, actual, unit</div>
+            <div id="kpi-status" style="font-size:11px;color:#94a3b8;font-family:monospace;margin-top:2px">metric,target,actual,unit</div>
           </div>
         </div>
       </div>
-      <div id="okr-drop" ondragover="ev(event)" ondrop="drop(event,'okr')" onclick="document.getElementById('okr-file').click()" class="border-2 border-dashed rounded-xl p-5 transition-colors cursor-pointer border-gray-300 hover:border-gray-400 bg-white">
+      <div id="okr-drop" class="drop-zone" onclick="document.getElementById('okr-file').click()">
         <input id="okr-file" type="file" accept=".csv" class="hidden" onchange="loadFile(event,'okr')"/>
-        <div class="flex items-center gap-3">
-          <span id="okr-icon" class="text-2xl">📂</span>
+        <div style="display:flex;align-items:center;gap:12px">
+          <span id="okr-icon" style="font-size:22px">📂</span>
           <div>
-            <p class="font-semibold text-gray-800">OKR / Goals Data</p>
-            <p class="text-sm text-gray-500">CSV: objective, key_result, target, actual, unit</p>
-            <p id="okr-status" class="text-xs text-gray-400 mt-1 font-mono">objective,key_result,target,actual,unit</p>
+            <div style="font-weight:600;font-size:13px">OKR / Goals Data</div>
+            <div style="font-size:12px;color:#94a3b8">CSV: objective, key_result, target, actual, unit</div>
+            <div id="okr-status" style="font-size:11px;color:#94a3b8;font-family:monospace;margin-top:2px">objective,key_result,target,actual,unit</div>
           </div>
         </div>
       </div>
-      <div id="budget-drop" ondragover="ev(event)" ondrop="drop(event,'budget')" onclick="document.getElementById('budget-file').click()" class="border-2 border-dashed rounded-xl p-5 transition-colors cursor-pointer border-gray-300 hover:border-gray-400 bg-white">
+      <div id="budget-drop" class="drop-zone" onclick="document.getElementById('budget-file').click()">
         <input id="budget-file" type="file" accept=".csv" class="hidden" onchange="loadFile(event,'budget')"/>
-        <div class="flex items-center gap-3">
-          <span id="budget-icon" class="text-2xl">📂</span>
+        <div style="display:flex;align-items:center;gap:12px">
+          <span id="budget-icon" style="font-size:22px">📂</span>
           <div>
-            <p class="font-semibold text-gray-800">Budget Data</p>
-            <p class="text-sm text-gray-500">CSV: category, budgeted, actual</p>
-            <p id="budget-status" class="text-xs text-gray-400 mt-1 font-mono">category,budgeted,actual</p>
+            <div style="font-weight:600;font-size:13px">Budget Data</div>
+            <div style="font-size:12px;color:#94a3b8">CSV: category, budgeted, actual</div>
+            <div id="budget-status" style="font-size:11px;color:#94a3b8;font-family:monospace;margin-top:2px">category,budgeted,actual</div>
           </div>
         </div>
       </div>
     </div>
+  </div>
 
-    <div id="data-summary" class="hidden bg-white border border-gray-200 rounded-xl p-4 mb-6 text-sm text-gray-600"></div>
-    <div id="error-box" class="hidden bg-red-50 border border-red-200 rounded-lg p-3 mb-4 text-sm text-red-700"></div>
+  <div id="data-summary" class="hidden" style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:12px;font-size:13px;margin-bottom:14px;color:#166534"></div>
 
-    <button onclick="loadSample()" class="w-full mb-3 py-3 rounded-xl border-2 border-slate-300 text-slate-700 font-semibold hover:bg-slate-50 transition-colors cursor-pointer">
-      ✨ Load Sample Data
-    </button>
-    <button id="gen-btn" onclick="generateReport()" disabled class="w-full py-3 rounded-xl bg-slate-800 text-white font-semibold hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 cursor-pointer">
-      Generate QBR Report →
-    </button>
+  <button onclick="loadSample()" style="width:100%;margin-bottom:10px;padding:12px;border-radius:10px;border:2px solid #e2e8f0;background:#fff;font-weight:600;font-size:14px;cursor:pointer;color:#475569">
+    ✨ Load Sample Data
+  </button>
+  <button id="gen-btn" onclick="generateReport()" disabled class="btn-primary">
+    Generate QBR Report →
+  </button>
 
-    <div class="mt-6 bg-blue-50 border border-blue-100 rounded-xl p-4 text-xs text-blue-700">
-      <p class="font-semibold mb-1">💡 No CSV files? Click "Load Sample Data" to see a full demo report instantly.</p>
-      <p>In the real app, Claude AI writes the executive summary and insights. Here a static summary is shown.</p>
+  <div style="margin-top:16px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px;font-size:12px;color:#1d4ed8;line-height:1.6">
+    <strong>💡 No CSV files?</strong> Click "Load Sample Data" to see a full demo report.<br/>
+    In production, Claude AI writes the executive summary and insights.
+  </div>
+</div>
+
+<!-- REPORT -->
+<div id="report-step" class="hidden fade">
+
+  <div class="hero">
+    <div style="font-size:11px;letter-spacing:.1em;color:#94a3b8;text-transform:uppercase;margin-bottom:6px">Quarterly Business Review</div>
+    <div id="r-company" style="font-size:26px;font-weight:700;margin-bottom:4px"></div>
+    <div id="r-quarter" style="color:#94a3b8;font-size:14px"></div>
+  </div>
+
+  <div class="section">
+    <h2 style="font-size:18px;margin-bottom:12px">📝 Executive Summary</h2>
+    <div class="card" style="margin-bottom:16px">
+      <div id="r-summary" style="font-size:13px;line-height:1.75;color:#334155"></div>
+    </div>
+    <h2 style="font-size:18px;margin-bottom:12px">💡 Recommendations</h2>
+    <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:18px">
+      <div id="r-recs" style="font-size:13px;line-height:2;color:#334155"></div>
     </div>
   </div>
 
-  <!-- ===== REPORT STEP ===== -->
-  <div id="report-step" class="hidden fade-in">
-
-    <!-- Header card -->
-    <div class="bg-gradient-to-br from-slate-800 to-slate-700 text-white rounded-2xl p-6 mb-8">
-      <p class="text-xs uppercase tracking-widest text-slate-400 mb-1">Quarterly Business Review</p>
-      <h1 id="r-company" class="text-2xl font-bold mb-1"></h1>
-      <p id="r-quarter" class="text-slate-300"></p>
+  <div id="kpi-section" class="section hidden">
+    <h2 style="font-size:18px;margin-bottom:10px">📊 KPI Performance</h2>
+    <div class="insight" id="kpi-insight"></div>
+    <div class="card" style="margin-bottom:16px;padding:20px 16px">
+      <svg id="kpi-svg" class="svg-chart"></svg>
     </div>
-
-    <!-- Executive Summary -->
-    <section class="mb-10">
-      <h2 class="text-xl font-bold text-gray-800 mb-3 flex items-center gap-2"><span>📝</span> Executive Summary</h2>
-      <div class="bg-white border border-gray-200 rounded-xl p-5 mb-6">
-        <p id="r-summary" class="text-sm text-gray-700 leading-relaxed"></p>
-      </div>
-      <h2 class="text-xl font-bold text-gray-800 mb-3 flex items-center gap-2"><span>💡</span> Recommendations</h2>
-      <div class="bg-amber-50 border border-amber-200 rounded-xl p-5">
-        <div id="r-recommendations" class="text-sm text-gray-700 leading-relaxed space-y-1"></div>
-      </div>
-    </section>
-
-    <!-- KPIs -->
-    <section id="kpi-section" class="mb-10 hidden">
-      <h2 class="text-xl font-bold text-gray-800 mb-1 flex items-center gap-2"><span>📊</span> KPI Performance</h2>
-      <p id="kpi-insight" class="text-sm text-gray-600 mb-4 bg-blue-50 border border-blue-100 rounded-lg p-3"></p>
-      <div class="bg-white border border-gray-200 rounded-xl p-4 mb-4">
-        <canvas id="kpi-chart" height="120"></canvas>
-      </div>
-      <div class="overflow-x-auto">
-        <table class="w-full text-sm border-collapse">
-          <thead><tr class="bg-gray-50 border-b border-gray-200">
-            <th class="text-left p-3 font-semibold text-gray-700">Metric</th>
-            <th class="text-right p-3 font-semibold text-gray-700">Target</th>
-            <th class="text-right p-3 font-semibold text-gray-700">Actual</th>
-            <th class="text-right p-3 font-semibold text-gray-700">vs Target</th>
-            <th class="text-center p-3 font-semibold text-gray-700">Status</th>
-          </tr></thead>
-          <tbody id="kpi-table"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- OKRs -->
-    <section id="okr-section" class="mb-10 hidden">
-      <h2 class="text-xl font-bold text-gray-800 mb-1 flex items-center gap-2"><span>🎯</span> Goals & OKRs Review</h2>
-      <p id="okr-insight" class="text-sm text-gray-600 mb-4 bg-purple-50 border border-purple-100 rounded-lg p-3"></p>
-      <div id="okr-cards" class="space-y-5"></div>
-    </section>
-
-    <!-- Budget -->
-    <section id="budget-section" class="mb-10 hidden">
-      <h2 class="text-xl font-bold text-gray-800 mb-1 flex items-center gap-2"><span>💰</span> Budget Variance Analysis</h2>
-      <p id="budget-insight" class="text-sm text-gray-600 mb-4 bg-amber-50 border border-amber-100 rounded-lg p-3"></p>
-      <div id="budget-cards" class="grid grid-cols-3 gap-4 mb-6"></div>
-      <div class="bg-white border border-gray-200 rounded-xl p-4 mb-4">
-        <p class="text-xs text-gray-500 mb-2 font-medium">Variance by Category (Actual − Budget)</p>
-        <canvas id="budget-chart" height="100"></canvas>
-      </div>
-      <div class="overflow-x-auto">
-        <table class="w-full text-sm border-collapse">
-          <thead><tr class="bg-gray-50 border-b border-gray-200">
-            <th class="text-left p-3 font-semibold text-gray-700">Category</th>
-            <th class="text-right p-3 font-semibold text-gray-700">Budgeted</th>
-            <th class="text-right p-3 font-semibold text-gray-700">Actual</th>
-            <th class="text-right p-3 font-semibold text-gray-700">Variance</th>
-            <th class="text-right p-3 font-semibold text-gray-700">Variance %</th>
-          </tr></thead>
-          <tbody id="budget-table"></tbody>
-        </table>
-      </div>
-    </section>
-
+    <div class="card" style="padding:0;overflow:hidden">
+      <table>
+        <thead><tr>
+          <th>Metric</th><th style="text-align:right">Target</th>
+          <th style="text-align:right">Actual</th>
+          <th style="text-align:right">vs Target</th>
+          <th style="text-align:center">Status</th>
+        </tr></thead>
+        <tbody id="kpi-table"></tbody>
+      </table>
+    </div>
   </div>
+
+  <div id="okr-section" class="section hidden">
+    <h2 style="font-size:18px;margin-bottom:10px">🎯 Goals & OKRs</h2>
+    <div class="insight purple" id="okr-insight"></div>
+    <div id="okr-cards" style="display:flex;flex-direction:column;gap:16px"></div>
+  </div>
+
+  <div id="budget-section" class="section hidden">
+    <h2 style="font-size:18px;margin-bottom:10px">💰 Budget Analysis</h2>
+    <div class="insight amber" id="budget-insight"></div>
+    <div id="budget-summary" class="grid3" style="margin-bottom:16px"></div>
+    <div class="card" style="margin-bottom:16px;padding:20px 16px">
+      <div style="font-size:11px;color:#94a3b8;margin-bottom:12px;font-weight:600">VARIANCE BY CATEGORY (Actual − Budget)</div>
+      <svg id="budget-svg" class="svg-chart"></svg>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <table>
+        <thead><tr>
+          <th>Category</th><th style="text-align:right">Budgeted</th>
+          <th style="text-align:right">Actual</th>
+          <th style="text-align:right">Variance</th>
+          <th style="text-align:right">Var %</th>
+        </tr></thead>
+        <tbody id="budget-table"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
 </main>
 
 <script>
-// ---- State ----
+/* @license
+Papa Parse
+v5.5.3
+https://github.com/mholt/PapaParse
+License: MIT
+*/
+
+(function(root, factory)
+{
+	/* globals define */
+	if (typeof define === 'function' && define.amd)
+	{
+		// AMD. Register as an anonymous module.
+		define([], factory);
+	}
+	else if (typeof module === 'object' && typeof exports !== 'undefined')
+	{
+		// Node. Does not work with strict CommonJS, but
+		// only CommonJS-like environments that support module.exports,
+		// like Node.
+		module.exports = factory();
+	}
+	else
+	{
+		// Browser globals (root is window)
+		root.Papa = factory();
+	}
+	// in strict mode we cannot access arguments.callee, so we need a named reference to
+	// stringify the factory method for the blob worker
+	// eslint-disable-next-line func-name
+}(this, function moduleFactory()
+{
+	'use strict';
+
+	var global = (function() {
+		// alternative method, similar to `Function('return this')()`
+		// but without using `eval` (which is disabled when
+		// using Content Security Policy).
+
+		if (typeof self !== 'undefined') { return self; }
+		if (typeof window !== 'undefined') { return window; }
+		if (typeof global !== 'undefined') { return global; }
+
+		// When running tests none of the above have been defined
+		return {};
+	})();
+
+
+	function getWorkerBlob() {
+		var URL = global.URL || global.webkitURL || null;
+		var code = moduleFactory.toString();
+		return Papa.BLOB_URL || (Papa.BLOB_URL = URL.createObjectURL(new Blob(["var global = (function() { if (typeof self !== 'undefined') { return self; } if (typeof window !== 'undefined') { return window; } if (typeof global !== 'undefined') { return global; } return {}; })(); global.IS_PAPA_WORKER=true; ", '(', code, ')();'], {type: 'text/javascript'})));
+	}
+
+	var IS_WORKER = !global.document && !!global.postMessage,
+		IS_PAPA_WORKER = global.IS_PAPA_WORKER || false;
+
+	var workers = {}, workerIdCounter = 0;
+
+	var Papa = {};
+
+	Papa.parse = CsvToJson;
+	Papa.unparse = JsonToCsv;
+
+	Papa.RECORD_SEP = String.fromCharCode(30);
+	Papa.UNIT_SEP = String.fromCharCode(31);
+	Papa.BYTE_ORDER_MARK = '\ufeff';
+	Papa.BAD_DELIMITERS = ['\r', '\n', '"', Papa.BYTE_ORDER_MARK];
+	Papa.WORKERS_SUPPORTED = !IS_WORKER && !!global.Worker;
+	Papa.NODE_STREAM_INPUT = 1;
+
+	// Configurable chunk sizes for local and remote files, respectively
+	Papa.LocalChunkSize = 1024 * 1024 * 10;	// 10 MB
+	Papa.RemoteChunkSize = 1024 * 1024 * 5;	// 5 MB
+	Papa.DefaultDelimiter = ',';			// Used if not specified and detection fails
+
+	// Exposed for testing and development only
+	Papa.Parser = Parser;
+	Papa.ParserHandle = ParserHandle;
+	Papa.NetworkStreamer = NetworkStreamer;
+	Papa.FileStreamer = FileStreamer;
+	Papa.StringStreamer = StringStreamer;
+	Papa.ReadableStreamStreamer = ReadableStreamStreamer;
+	if (typeof PAPA_BROWSER_CONTEXT === 'undefined') {
+		Papa.DuplexStreamStreamer = DuplexStreamStreamer;
+	}
+
+	if (global.jQuery)
+	{
+		var $ = global.jQuery;
+		$.fn.parse = function(options)
+		{
+			var config = options.config || {};
+			var queue = [];
+
+			this.each(function(idx)
+			{
+				var supported = $(this).prop('tagName').toUpperCase() === 'INPUT'
+								&& $(this).attr('type').toLowerCase() === 'file'
+								&& global.FileReader;
+
+				if (!supported || !this.files || this.files.length === 0)
+					return true;	// continue to next input element
+
+				for (var i = 0; i < this.files.length; i++)
+				{
+					queue.push({
+						file: this.files[i],
+						inputElem: this,
+						instanceConfig: $.extend({}, config)
+					});
+				}
+			});
+
+			parseNextFile();	// begin parsing
+			return this;		// maintains chainability
+
+
+			function parseNextFile()
+			{
+				if (queue.length === 0)
+				{
+					if (isFunction(options.complete))
+						options.complete();
+					return;
+				}
+
+				var f = queue[0];
+
+				if (isFunction(options.before))
+				{
+					var returned = options.before(f.file, f.inputElem);
+
+					if (typeof returned === 'object')
+					{
+						if (returned.action === 'abort')
+						{
+							error('AbortError', f.file, f.inputElem, returned.reason);
+							return;	// Aborts all queued files immediately
+						}
+						else if (returned.action === 'skip')
+						{
+							fileComplete();	// parse the next file in the queue, if any
+							return;
+						}
+						else if (typeof returned.config === 'object')
+							f.instanceConfig = $.extend(f.instanceConfig, returned.config);
+					}
+					else if (returned === 'skip')
+					{
+						fileComplete();	// parse the next file in the queue, if any
+						return;
+					}
+				}
+
+				// Wrap up the user's complete callback, if any, so that ours also gets executed
+				var userCompleteFunc = f.instanceConfig.complete;
+				f.instanceConfig.complete = function(results)
+				{
+					if (isFunction(userCompleteFunc))
+						userCompleteFunc(results, f.file, f.inputElem);
+					fileComplete();
+				};
+
+				Papa.parse(f.file, f.instanceConfig);
+			}
+
+			function error(name, file, elem, reason)
+			{
+				if (isFunction(options.error))
+					options.error({name: name}, file, elem, reason);
+			}
+
+			function fileComplete()
+			{
+				queue.splice(0, 1);
+				parseNextFile();
+			}
+		};
+	}
+
+
+	if (IS_PAPA_WORKER)
+	{
+		global.onmessage = workerThreadReceivedMessage;
+	}
+
+
+
+
+	function CsvToJson(_input, _config)
+	{
+		_config = _config || {};
+		var dynamicTyping = _config.dynamicTyping || false;
+		if (isFunction(dynamicTyping)) {
+			_config.dynamicTypingFunction = dynamicTyping;
+			// Will be filled on first row call
+			dynamicTyping = {};
+		}
+		_config.dynamicTyping = dynamicTyping;
+
+		_config.transform = isFunction(_config.transform) ? _config.transform : false;
+
+		if (_config.worker && Papa.WORKERS_SUPPORTED)
+		{
+			var w = newWorker();
+
+			w.userStep = _config.step;
+			w.userChunk = _config.chunk;
+			w.userComplete = _config.complete;
+			w.userError = _config.error;
+
+			_config.step = isFunction(_config.step);
+			_config.chunk = isFunction(_config.chunk);
+			_config.complete = isFunction(_config.complete);
+			_config.error = isFunction(_config.error);
+			delete _config.worker;	// prevent infinite loop
+
+			w.postMessage({
+				input: _input,
+				config: _config,
+				workerId: w.id
+			});
+
+			return;
+		}
+
+		var streamer = null;
+		if (_input === Papa.NODE_STREAM_INPUT && typeof PAPA_BROWSER_CONTEXT === 'undefined')
+		{
+			// create a node Duplex stream for use
+			// with .pipe
+			streamer = new DuplexStreamStreamer(_config);
+			return streamer.getStream();
+		}
+		else if (typeof _input === 'string')
+		{
+			_input = stripBom(_input);
+			if (_config.download)
+				streamer = new NetworkStreamer(_config);
+			else
+				streamer = new StringStreamer(_config);
+		}
+		else if (_input.readable === true && isFunction(_input.read) && isFunction(_input.on))
+		{
+			streamer = new ReadableStreamStreamer(_config);
+		}
+		else if ((global.File && _input instanceof File) || _input instanceof Object)	// ...Safari. (see issue #106)
+			streamer = new FileStreamer(_config);
+
+		return streamer.stream(_input);
+
+		// Strip character from UTF-8 BOM encoded files that cause issue parsing the file
+		function stripBom(string) {
+			if (string.charCodeAt(0) === 0xfeff) {
+				return string.slice(1);
+			}
+			return string;
+		}
+	}
+
+
+
+
+
+
+	function JsonToCsv(_input, _config)
+	{
+		// Default configuration
+
+		/** whether to surround every datum with quotes */
+		var _quotes = false;
+
+		/** whether to write headers */
+		var _writeHeader = true;
+
+		/** delimiting character(s) */
+		var _delimiter = ',';
+
+		/** newline character(s) */
+		var _newline = '\r\n';
+
+		/** quote character */
+		var _quoteChar = '"';
+
+		/** escaped quote character, either "" or <config.escapeChar>" */
+		var _escapedQuote = _quoteChar + _quoteChar;
+
+		/** whether to skip empty lines */
+		var _skipEmptyLines = false;
+
+		/** the columns (keys) we expect when we unparse objects */
+		var _columns = null;
+
+		/** whether to prevent outputting cells that can be parsed as formulae by spreadsheet software (Excel and LibreOffice) */
+		var _escapeFormulae = false;
+
+		unpackConfig();
+
+		var quoteCharRegex = new RegExp(escapeRegExp(_quoteChar), 'g');
+
+		if (typeof _input === 'string')
+			_input = JSON.parse(_input);
+
+		if (Array.isArray(_input))
+		{
+			if (!_input.length || Array.isArray(_input[0]))
+				return serialize(null, _input, _skipEmptyLines);
+			else if (typeof _input[0] === 'object')
+				return serialize(_columns || Object.keys(_input[0]), _input, _skipEmptyLines);
+		}
+		else if (typeof _input === 'object')
+		{
+			if (typeof _input.data === 'string')
+				_input.data = JSON.parse(_input.data);
+
+			if (Array.isArray(_input.data))
+			{
+				if (!_input.fields)
+					_input.fields = _input.meta && _input.meta.fields || _columns;
+
+				if (!_input.fields)
+					_input.fields =  Array.isArray(_input.data[0])
+						? _input.fields
+						: typeof _input.data[0] === 'object'
+							? Object.keys(_input.data[0])
+							: [];
+
+				if (!(Array.isArray(_input.data[0])) && typeof _input.data[0] !== 'object')
+					_input.data = [_input.data];	// handles input like [1,2,3] or ['asdf']
+			}
+
+			return serialize(_input.fields || [], _input.data || [], _skipEmptyLines);
+		}
+
+		// Default (any valid paths should return before this)
+		throw new Error('Unable to serialize unrecognized input');
+
+
+		function unpackConfig()
+		{
+			if (typeof _config !== 'object')
+				return;
+
+			if (typeof _config.delimiter === 'string'
+                && !Papa.BAD_DELIMITERS.filter(function(value) { return _config.delimiter.indexOf(value) !== -1; }).length)
+			{
+				_delimiter = _config.delimiter;
+			}
+
+			if (typeof _config.quotes === 'boolean'
+				|| typeof _config.quotes === 'function'
+				|| Array.isArray(_config.quotes))
+				_quotes = _config.quotes;
+
+			if (typeof _config.skipEmptyLines === 'boolean'
+				|| typeof _config.skipEmptyLines === 'string')
+				_skipEmptyLines = _config.skipEmptyLines;
+
+			if (typeof _config.newline === 'string')
+				_newline = _config.newline;
+
+			if (typeof _config.quoteChar === 'string')
+				_quoteChar = _config.quoteChar;
+
+			if (typeof _config.header === 'boolean')
+				_writeHeader = _config.header;
+
+			if (Array.isArray(_config.columns)) {
+
+				if (_config.columns.length === 0) throw new Error('Option columns is empty');
+
+				_columns = _config.columns;
+			}
+
+			if (_config.escapeChar !== undefined) {
+				_escapedQuote = _config.escapeChar + _quoteChar;
+			}
+
+			if (_config.escapeFormulae instanceof RegExp) {
+				_escapeFormulae = _config.escapeFormulae;
+			} else if (typeof _config.escapeFormulae === 'boolean' && _config.escapeFormulae) {
+				_escapeFormulae =  /^[=+\-@\t\r].*$/;
+			}
+		}
+
+		/** The double for loop that iterates the data and writes out a CSV string including header row */
+		function serialize(fields, data, skipEmptyLines)
+		{
+			var csv = '';
+
+			if (typeof fields === 'string')
+				fields = JSON.parse(fields);
+			if (typeof data === 'string')
+				data = JSON.parse(data);
+
+			var hasHeader = Array.isArray(fields) && fields.length > 0;
+			var dataKeyedByField = !(Array.isArray(data[0]));
+
+			// If there a header row, write it first
+			if (hasHeader && _writeHeader)
+			{
+				for (var i = 0; i < fields.length; i++)
+				{
+					if (i > 0)
+						csv += _delimiter;
+					csv += safe(fields[i], i);
+				}
+				if (data.length > 0)
+					csv += _newline;
+			}
+
+			// Then write out the data
+			for (var row = 0; row < data.length; row++)
+			{
+				var maxCol = hasHeader ? fields.length : data[row].length;
+
+				var emptyLine = false;
+				var nullLine = hasHeader ? Object.keys(data[row]).length === 0 : data[row].length === 0;
+				if (skipEmptyLines && !hasHeader)
+				{
+					emptyLine = skipEmptyLines === 'greedy' ? data[row].join('').trim() === '' : data[row].length === 1 && data[row][0].length === 0;
+				}
+				if (skipEmptyLines === 'greedy' && hasHeader) {
+					var line = [];
+					for (var c = 0; c < maxCol; c++) {
+						var cx = dataKeyedByField ? fields[c] : c;
+						line.push(data[row][cx]);
+					}
+					emptyLine = line.join('').trim() === '';
+				}
+				if (!emptyLine)
+				{
+					for (var col = 0; col < maxCol; col++)
+					{
+						if (col > 0 && !nullLine)
+							csv += _delimiter;
+						var colIdx = hasHeader && dataKeyedByField ? fields[col] : col;
+						csv += safe(data[row][colIdx], col);
+					}
+					if (row < data.length - 1 && (!skipEmptyLines || (maxCol > 0 && !nullLine)))
+					{
+						csv += _newline;
+					}
+				}
+			}
+			return csv;
+		}
+
+		/** Encloses a value around quotes if needed (makes a value safe for CSV insertion) */
+		function safe(str, col)
+		{
+			if (typeof str === 'undefined' || str === null)
+				return '';
+
+			if (str.constructor === Date)
+				return JSON.stringify(str).slice(1, 25);
+
+			var needsQuotes = false;
+
+			if (_escapeFormulae && typeof str === "string" && _escapeFormulae.test(str)) {
+				str = "'" + str;
+				needsQuotes = true;
+			}
+
+			var escapedQuoteStr = str.toString().replace(quoteCharRegex, _escapedQuote);
+
+			needsQuotes = needsQuotes
+							|| _quotes === true
+							|| (typeof _quotes === 'function' && _quotes(str, col))
+							|| (Array.isArray(_quotes) && _quotes[col])
+							|| hasAny(escapedQuoteStr, Papa.BAD_DELIMITERS)
+							|| escapedQuoteStr.indexOf(_delimiter) > -1
+							|| escapedQuoteStr.charAt(0) === ' '
+							|| escapedQuoteStr.charAt(escapedQuoteStr.length - 1) === ' ';
+
+			return needsQuotes ? _quoteChar + escapedQuoteStr + _quoteChar : escapedQuoteStr;
+		}
+
+		function hasAny(str, substrings)
+		{
+			for (var i = 0; i < substrings.length; i++)
+				if (str.indexOf(substrings[i]) > -1)
+					return true;
+			return false;
+		}
+	}
+
+
+	/** ChunkStreamer is the base prototype for various streamer implementations. */
+	function ChunkStreamer(config)
+	{
+		this._handle = null;
+		this._finished = false;
+		this._completed = false;
+		this._halted = false;
+		this._input = null;
+		this._baseIndex = 0;
+		this._partialLine = '';
+		this._rowCount = 0;
+		this._start = 0;
+		this._nextChunk = null;
+		this.isFirstChunk = true;
+		this._completeResults = {
+			data: [],
+			errors: [],
+			meta: {}
+		};
+		replaceConfig.call(this, config);
+
+		this.parseChunk = function(chunk, isFakeChunk)
+		{
+			// First chunk pre-processing
+			const skipFirstNLines = parseInt(this._config.skipFirstNLines) || 0;
+			if (this.isFirstChunk && skipFirstNLines > 0) {
+				let _newline = this._config.newline;
+				if (!_newline) {
+					const quoteChar = this._config.quoteChar || '"';
+					_newline = this._handle.guessLineEndings(chunk, quoteChar);
+				}
+				const splitChunk = chunk.split(_newline);
+				chunk = [...splitChunk.slice(skipFirstNLines)].join(_newline);
+			}
+			if (this.isFirstChunk && isFunction(this._config.beforeFirstChunk))
+			{
+				var modifiedChunk = this._config.beforeFirstChunk(chunk);
+				if (modifiedChunk !== undefined)
+					chunk = modifiedChunk;
+			}
+			this.isFirstChunk = false;
+			this._halted = false;
+
+			// Rejoin the line we likely just split in two by chunking the file
+			var aggregate = this._partialLine + chunk;
+			this._partialLine = '';
+			var results = this._handle.parse(aggregate, this._baseIndex, !this._finished);
+
+			if (this._handle.paused() || this._handle.aborted()) {
+				this._halted = true;
+				return;
+			}
+
+			var lastIndex = results.meta.cursor;
+
+			if (!this._finished)
+			{
+				this._partialLine = aggregate.substring(lastIndex - this._baseIndex);
+				this._baseIndex = lastIndex;
+			}
+
+			if (results && results.data)
+				this._rowCount += results.data.length;
+
+			var finishedIncludingPreview = this._finished || (this._config.preview && this._rowCount >= this._config.preview);
+
+			if (IS_PAPA_WORKER)
+			{
+				global.postMessage({
+					results: results,
+					workerId: Papa.WORKER_ID,
+					finished: finishedIncludingPreview
+				});
+			}
+			else if (isFunction(this._config.chunk) && !isFakeChunk)
+			{
+				this._config.chunk(results, this._handle);
+				if (this._handle.paused() || this._handle.aborted()) {
+					this._halted = true;
+					return;
+				}
+				results = undefined;
+				this._completeResults = undefined;
+			}
+
+			if (!this._config.step && !this._config.chunk) {
+				this._completeResults.data = this._completeResults.data.concat(results.data);
+				this._completeResults.errors = this._completeResults.errors.concat(results.errors);
+				this._completeResults.meta = results.meta;
+			}
+
+			if (!this._completed && finishedIncludingPreview && isFunction(this._config.complete) && (!results || !results.meta.aborted)) {
+				this._config.complete(this._completeResults, this._input);
+				this._completed = true;
+			}
+
+			if (!finishedIncludingPreview && (!results || !results.meta.paused))
+				this._nextChunk();
+
+			return results;
+		};
+
+		this._sendError = function(error)
+		{
+			if (isFunction(this._config.error))
+				this._config.error(error);
+			else if (IS_PAPA_WORKER && this._config.error)
+			{
+				global.postMessage({
+					workerId: Papa.WORKER_ID,
+					error: error,
+					finished: false
+				});
+			}
+		};
+
+		function replaceConfig(config)
+		{
+			// Deep-copy the config so we can edit it
+			var configCopy = copy(config);
+			configCopy.chunkSize = parseInt(configCopy.chunkSize);	// parseInt VERY important so we don't concatenate strings!
+			if (!config.step && !config.chunk)
+				configCopy.chunkSize = null;  // disable Range header if not streaming; bad values break IIS - see issue #196
+			this._handle = new ParserHandle(configCopy);
+			this._handle.streamer = this;
+			this._config = configCopy;	// persist the copy to the caller
+		}
+	}
+
+
+	function NetworkStreamer(config)
+	{
+		config = config || {};
+		if (!config.chunkSize)
+			config.chunkSize = Papa.RemoteChunkSize;
+		ChunkStreamer.call(this, config);
+
+		var xhr;
+
+		if (IS_WORKER)
+		{
+			this._nextChunk = function()
+			{
+				this._readChunk();
+				this._chunkLoaded();
+			};
+		}
+		else
+		{
+			this._nextChunk = function()
+			{
+				this._readChunk();
+			};
+		}
+
+		this.stream = function(url)
+		{
+			this._input = url;
+			this._nextChunk();	// Starts streaming
+		};
+
+		this._readChunk = function()
+		{
+			if (this._finished)
+			{
+				this._chunkLoaded();
+				return;
+			}
+
+			xhr = new XMLHttpRequest();
+
+			if (this._config.withCredentials)
+			{
+				xhr.withCredentials = this._config.withCredentials;
+			}
+
+			if (!IS_WORKER)
+			{
+				xhr.onload = bindFunction(this._chunkLoaded, this);
+				xhr.onerror = bindFunction(this._chunkError, this);
+			}
+
+			xhr.open(this._config.downloadRequestBody ? 'POST' : 'GET', this._input, !IS_WORKER);
+			// Headers can only be set when once the request state is OPENED
+			if (this._config.downloadRequestHeaders)
+			{
+				var headers = this._config.downloadRequestHeaders;
+
+				for (var headerName in headers)
+				{
+					xhr.setRequestHeader(headerName, headers[headerName]);
+				}
+			}
+
+			if (this._config.chunkSize)
+			{
+				var end = this._start + this._config.chunkSize - 1;	// minus one because byte range is inclusive
+				xhr.setRequestHeader('Range', 'bytes=' + this._start + '-' + end);
+			}
+
+			try {
+				xhr.send(this._config.downloadRequestBody);
+			}
+			catch (err) {
+				this._chunkError(err.message);
+			}
+
+			if (IS_WORKER && xhr.status === 0)
+				this._chunkError();
+		};
+
+		this._chunkLoaded = function()
+		{
+			if (xhr.readyState !== 4)
+				return;
+
+			if (xhr.status < 200 || xhr.status >= 400)
+			{
+				this._chunkError();
+				return;
+			}
+
+			// Use chunckSize as it may be a diference on reponse lentgh due to characters with more than 1 byte
+			this._start += this._config.chunkSize ? this._config.chunkSize : xhr.responseText.length;
+			this._finished = !this._config.chunkSize || this._start >= getFileSize(xhr);
+			this.parseChunk(xhr.responseText);
+		};
+
+		this._chunkError = function(errorMessage)
+		{
+			var errorText = xhr.statusText || errorMessage;
+			this._sendError(new Error(errorText));
+		};
+
+		function getFileSize(xhr)
+		{
+			var contentRange = xhr.getResponseHeader('Content-Range');
+			if (contentRange === null) { // no content range, then finish!
+				return -1;
+			}
+			return parseInt(contentRange.substring(contentRange.lastIndexOf('/') + 1));
+		}
+	}
+	NetworkStreamer.prototype = Object.create(ChunkStreamer.prototype);
+	NetworkStreamer.prototype.constructor = NetworkStreamer;
+
+
+	function FileStreamer(config)
+	{
+		config = config || {};
+		if (!config.chunkSize)
+			config.chunkSize = Papa.LocalChunkSize;
+		ChunkStreamer.call(this, config);
+
+		var reader, slice;
+
+		// FileReader is better than FileReaderSync (even in worker) - see http://stackoverflow.com/q/24708649/1048862
+		// But Firefox is a pill, too - see issue #76: https://github.com/mholt/PapaParse/issues/76
+		var usingAsyncReader = typeof FileReader !== 'undefined';	// Safari doesn't consider it a function - see issue #105
+
+		this.stream = function(file)
+		{
+			this._input = file;
+			slice = file.slice || file.webkitSlice || file.mozSlice;
+
+			if (usingAsyncReader)
+			{
+				reader = new FileReader();		// Preferred method of reading files, even in workers
+				reader.onload = bindFunction(this._chunkLoaded, this);
+				reader.onerror = bindFunction(this._chunkError, this);
+			}
+			else
+				reader = new FileReaderSync();	// Hack for running in a web worker in Firefox
+
+			this._nextChunk();	// Starts streaming
+		};
+
+		this._nextChunk = function()
+		{
+			if (!this._finished && (!this._config.preview || this._rowCount < this._config.preview))
+				this._readChunk();
+		};
+
+		this._readChunk = function()
+		{
+			var input = this._input;
+			if (this._config.chunkSize)
+			{
+				var end = Math.min(this._start + this._config.chunkSize, this._input.size);
+				input = slice.call(input, this._start, end);
+			}
+			var txt = reader.readAsText(input, this._config.encoding);
+			if (!usingAsyncReader)
+				this._chunkLoaded({ target: { result: txt } });	// mimic the async signature
+		};
+
+		this._chunkLoaded = function(event)
+		{
+			// Very important to increment start each time before handling results
+			this._start += this._config.chunkSize;
+			this._finished = !this._config.chunkSize || this._start >= this._input.size;
+			this.parseChunk(event.target.result);
+		};
+
+		this._chunkError = function()
+		{
+			this._sendError(reader.error);
+		};
+
+	}
+	FileStreamer.prototype = Object.create(ChunkStreamer.prototype);
+	FileStreamer.prototype.constructor = FileStreamer;
+
+
+	function StringStreamer(config)
+	{
+		config = config || {};
+		ChunkStreamer.call(this, config);
+
+		var remaining;
+		this.stream = function(s)
+		{
+			remaining = s;
+			return this._nextChunk();
+		};
+		this._nextChunk = function()
+		{
+			if (this._finished) return;
+			var size = this._config.chunkSize;
+			var chunk;
+			if(size) {
+				chunk = remaining.substring(0, size);
+				remaining = remaining.substring(size);
+			} else {
+				chunk = remaining;
+				remaining = '';
+			}
+			this._finished = !remaining;
+			return this.parseChunk(chunk);
+		};
+	}
+	StringStreamer.prototype = Object.create(StringStreamer.prototype);
+	StringStreamer.prototype.constructor = StringStreamer;
+
+
+	function ReadableStreamStreamer(config)
+	{
+		config = config || {};
+
+		ChunkStreamer.call(this, config);
+
+		var queue = [];
+		var parseOnData = true;
+		var streamHasEnded = false;
+
+		this.pause = function()
+		{
+			ChunkStreamer.prototype.pause.apply(this, arguments);
+			this._input.pause();
+		};
+
+		this.resume = function()
+		{
+			ChunkStreamer.prototype.resume.apply(this, arguments);
+			this._input.resume();
+		};
+
+		this.stream = function(stream)
+		{
+			this._input = stream;
+
+			this._input.on('data', this._streamData);
+			this._input.on('end', this._streamEnd);
+			this._input.on('error', this._streamError);
+		};
+
+		this._checkIsFinished = function()
+		{
+			if (streamHasEnded && queue.length === 1) {
+				this._finished = true;
+			}
+		};
+
+		this._nextChunk = function()
+		{
+			this._checkIsFinished();
+			if (queue.length)
+			{
+				this.parseChunk(queue.shift());
+			}
+			else
+			{
+				parseOnData = true;
+			}
+		};
+
+		this._streamData = bindFunction(function(chunk)
+		{
+			try
+			{
+				queue.push(typeof chunk === 'string' ? chunk : chunk.toString(this._config.encoding));
+
+				if (parseOnData)
+				{
+					parseOnData = false;
+					this._checkIsFinished();
+					this.parseChunk(queue.shift());
+				}
+			}
+			catch (error)
+			{
+				this._streamError(error);
+			}
+		}, this);
+
+		this._streamError = bindFunction(function(error)
+		{
+			this._streamCleanUp();
+			this._sendError(error);
+		}, this);
+
+		this._streamEnd = bindFunction(function()
+		{
+			this._streamCleanUp();
+			streamHasEnded = true;
+			this._streamData('');
+		}, this);
+
+		this._streamCleanUp = bindFunction(function()
+		{
+			this._input.removeListener('data', this._streamData);
+			this._input.removeListener('end', this._streamEnd);
+			this._input.removeListener('error', this._streamError);
+		}, this);
+	}
+	ReadableStreamStreamer.prototype = Object.create(ChunkStreamer.prototype);
+	ReadableStreamStreamer.prototype.constructor = ReadableStreamStreamer;
+
+
+	function DuplexStreamStreamer(_config) {
+		var Duplex = require('stream').Duplex;
+		var config = copy(_config);
+		var parseOnWrite = true;
+		var writeStreamHasFinished = false;
+		var parseCallbackQueue = [];
+		var stream = null;
+
+		this._onCsvData = function(results)
+		{
+			var data = results.data;
+			if (!stream.push(data) && !this._handle.paused()) {
+				// the writeable consumer buffer has filled up
+				// so we need to pause until more items
+				// can be processed
+				this._handle.pause();
+			}
+		};
+
+		this._onCsvComplete = function()
+		{
+			// node will finish the read stream when
+			// null is pushed
+			stream.push(null);
+		};
+
+		config.step = bindFunction(this._onCsvData, this);
+		config.complete = bindFunction(this._onCsvComplete, this);
+		ChunkStreamer.call(this, config);
+
+		this._nextChunk = function()
+		{
+			if (writeStreamHasFinished && parseCallbackQueue.length === 1) {
+				this._finished = true;
+			}
+			if (parseCallbackQueue.length) {
+				parseCallbackQueue.shift()();
+			} else {
+				parseOnWrite = true;
+			}
+		};
+
+		this._addToParseQueue = function(chunk, callback)
+		{
+			// add to queue so that we can indicate
+			// completion via callback
+			// node will automatically pause the incoming stream
+			// when too many items have been added without their
+			// callback being invoked
+			parseCallbackQueue.push(bindFunction(function() {
+				this.parseChunk(typeof chunk === 'string' ? chunk : chunk.toString(config.encoding));
+				if (isFunction(callback)) {
+					return callback();
+				}
+			}, this));
+			if (parseOnWrite) {
+				parseOnWrite = false;
+				this._nextChunk();
+			}
+		};
+
+		this._onRead = function()
+		{
+			if (this._handle.paused()) {
+				// the writeable consumer can handle more data
+				// so resume the chunk parsing
+				this._handle.resume();
+			}
+		};
+
+		this._onWrite = function(chunk, encoding, callback)
+		{
+			this._addToParseQueue(chunk, callback);
+		};
+
+		this._onWriteComplete = function()
+		{
+			writeStreamHasFinished = true;
+			// have to write empty string
+			// so parser knows its done
+			this._addToParseQueue('');
+		};
+
+		this.getStream = function()
+		{
+			return stream;
+		};
+		stream = new Duplex({
+			readableObjectMode: true,
+			decodeStrings: false,
+			read: bindFunction(this._onRead, this),
+			write: bindFunction(this._onWrite, this)
+		});
+		stream.once('finish', bindFunction(this._onWriteComplete, this));
+	}
+	if (typeof PAPA_BROWSER_CONTEXT === 'undefined') {
+		DuplexStreamStreamer.prototype = Object.create(ChunkStreamer.prototype);
+		DuplexStreamStreamer.prototype.constructor = DuplexStreamStreamer;
+	}
+
+
+	// Use one ParserHandle per entire CSV file or string
+	function ParserHandle(_config)
+	{
+		// One goal is to minimize the use of regular expressions...
+		var MAX_FLOAT = Math.pow(2, 53);
+		var MIN_FLOAT = -MAX_FLOAT;
+		var FLOAT = /^\s*-?(\d+\.?|\.\d+|\d+\.\d+)([eE][-+]?\d+)?\s*$/;
+		var ISO_DATE = /^((\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d\.\d+([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z)))$/;
+		var self = this;
+		var _stepCounter = 0;	// Number of times step was called (number of rows parsed)
+		var _rowCounter = 0;	// Number of rows that have been parsed so far
+		var _input;				// The input being parsed
+		var _parser;			// The core parser being used
+		var _paused = false;	// Whether we are paused or not
+		var _aborted = false;	// Whether the parser has aborted or not
+		var _delimiterError;	// Temporary state between delimiter detection and processing results
+		var _fields = [];		// Fields are from the header row of the input, if there is one
+		var _results = {		// The last results returned from the parser
+			data: [],
+			errors: [],
+			meta: {}
+		};
+
+		if (isFunction(_config.step))
+		{
+			var userStep = _config.step;
+			_config.step = function(results)
+			{
+				_results = results;
+
+				if (needsHeaderRow())
+					processResults();
+				else	// only call user's step function after header row
+				{
+					processResults();
+
+					// It's possbile that this line was empty and there's no row here after all
+					if (_results.data.length === 0)
+						return;
+
+					_stepCounter += results.data.length;
+					if (_config.preview && _stepCounter > _config.preview)
+						_parser.abort();
+					else {
+						_results.data = _results.data[0];
+						userStep(_results, self);
+					}
+				}
+			};
+		}
+
+		/**
+		 * Parses input. Most users won't need, and shouldn't mess with, the baseIndex
+		 * and ignoreLastRow parameters. They are used by streamers (wrapper functions)
+		 * when an input comes in multiple chunks, like from a file.
+		 */
+		this.parse = function(input, baseIndex, ignoreLastRow)
+		{
+			var quoteChar = _config.quoteChar || '"';
+			if (!_config.newline)
+				_config.newline = this.guessLineEndings(input, quoteChar);
+
+			_delimiterError = false;
+			if (!_config.delimiter)
+			{
+				var delimGuess = guessDelimiter(input, _config.newline, _config.skipEmptyLines, _config.comments, _config.delimitersToGuess);
+				if (delimGuess.successful)
+					_config.delimiter = delimGuess.bestDelimiter;
+				else
+				{
+					_delimiterError = true;	// add error after parsing (otherwise it would be overwritten)
+					_config.delimiter = Papa.DefaultDelimiter;
+				}
+				_results.meta.delimiter = _config.delimiter;
+			}
+			else if(isFunction(_config.delimiter))
+			{
+				_config.delimiter = _config.delimiter(input);
+				_results.meta.delimiter = _config.delimiter;
+			}
+
+			var parserConfig = copy(_config);
+			if (_config.preview && _config.header)
+				parserConfig.preview++;	// to compensate for header row
+
+			_input = input;
+			_parser = new Parser(parserConfig);
+			_results = _parser.parse(_input, baseIndex, ignoreLastRow);
+			processResults();
+			return _paused ? { meta: { paused: true } } : (_results || { meta: { paused: false } });
+		};
+
+		this.paused = function()
+		{
+			return _paused;
+		};
+
+		this.pause = function()
+		{
+			_paused = true;
+			_parser.abort();
+
+			// If it is streaming via "chunking", the reader will start appending correctly already so no need to substring,
+			// otherwise we can get duplicate content within a row
+			_input = isFunction(_config.chunk) ? "" : _input.substring(_parser.getCharIndex());
+		};
+
+		this.resume = function()
+		{
+			if(self.streamer._halted) {
+				_paused = false;
+				self.streamer.parseChunk(_input, true);
+			} else {
+				// Bugfix: #636 In case the processing hasn't halted yet
+				// wait for it to halt in order to resume
+				setTimeout(self.resume, 3);
+			}
+		};
+
+		this.aborted = function()
+		{
+			return _aborted;
+		};
+
+		this.abort = function()
+		{
+			_aborted = true;
+			_parser.abort();
+			_results.meta.aborted = true;
+			if (isFunction(_config.complete))
+				_config.complete(_results);
+			_input = '';
+		};
+
+		this.guessLineEndings = function(input, quoteChar)
+		{
+			input = input.substring(0, 1024 * 1024);	// max length 1 MB
+			// Replace all the text inside quotes
+			var re = new RegExp(escapeRegExp(quoteChar) + '([^]*?)' + escapeRegExp(quoteChar), 'gm');
+			input = input.replace(re, '');
+
+			var r = input.split('\r');
+
+			var n = input.split('\n');
+
+			var nAppearsFirst = (n.length > 1 && n[0].length < r[0].length);
+
+			if (r.length === 1 || nAppearsFirst)
+				return '\n';
+
+			var numWithN = 0;
+			for (var i = 0; i < r.length; i++)
+			{
+				if (r[i][0] === '\n')
+					numWithN++;
+			}
+
+			return numWithN >= r.length / 2 ? '\r\n' : '\r';
+		};
+
+		function testEmptyLine(s) {
+			return _config.skipEmptyLines === 'greedy' ? s.join('').trim() === '' : s.length === 1 && s[0].length === 0;
+		}
+
+		function testFloat(s) {
+			if (FLOAT.test(s)) {
+				var floatValue = parseFloat(s);
+				if (floatValue > MIN_FLOAT && floatValue < MAX_FLOAT) {
+					return true;
+				}
+			}
+			return false;
+		}
+
+		function processResults()
+		{
+			if (_results && _delimiterError)
+			{
+				addError('Delimiter', 'UndetectableDelimiter', 'Unable to auto-detect delimiting character; defaulted to \'' + Papa.DefaultDelimiter + '\'');
+				_delimiterError = false;
+			}
+
+			if (_config.skipEmptyLines)
+			{
+				_results.data = _results.data.filter(function(d) {
+					return !testEmptyLine(d);
+				});
+			}
+
+			if (needsHeaderRow())
+				fillHeaderFields();
+
+			return applyHeaderAndDynamicTypingAndTransformation();
+		}
+
+		function needsHeaderRow()
+		{
+			return _config.header && _fields.length === 0;
+		}
+
+		function fillHeaderFields()
+		{
+			if (!_results)
+				return;
+
+			function addHeader(header, i)
+			{
+				if (isFunction(_config.transformHeader))
+					header = _config.transformHeader(header, i);
+
+				_fields.push(header);
+			}
+
+			if (Array.isArray(_results.data[0]))
+			{
+				for (var i = 0; needsHeaderRow() && i < _results.data.length; i++)
+					_results.data[i].forEach(addHeader);
+
+				_results.data.splice(0, 1);
+			}
+			// if _results.data[0] is not an array, we are in a step where _results.data is the row.
+			else
+				_results.data.forEach(addHeader);
+		}
+
+		function shouldApplyDynamicTyping(field) {
+			// Cache function values to avoid calling it for each row
+			if (_config.dynamicTypingFunction && _config.dynamicTyping[field] === undefined) {
+				_config.dynamicTyping[field] = _config.dynamicTypingFunction(field);
+			}
+			return (_config.dynamicTyping[field] || _config.dynamicTyping) === true;
+		}
+
+		function parseDynamic(field, value)
+		{
+			if (shouldApplyDynamicTyping(field))
+			{
+				if (value === 'true' || value === 'TRUE')
+					return true;
+				else if (value === 'false' || value === 'FALSE')
+					return false;
+				else if (testFloat(value))
+					return parseFloat(value);
+				else if (ISO_DATE.test(value))
+					return new Date(value);
+				else
+					return (value === '' ? null : value);
+			}
+			return value;
+		}
+
+		function applyHeaderAndDynamicTypingAndTransformation()
+		{
+			if (!_results || (!_config.header && !_config.dynamicTyping && !_config.transform))
+				return _results;
+
+			function processRow(rowSource, i)
+			{
+				var row = _config.header ? {} : [];
+
+				var j;
+				for (j = 0; j < rowSource.length; j++)
+				{
+					var field = j;
+					var value = rowSource[j];
+
+					if (_config.header)
+						field = j >= _fields.length ? '__parsed_extra' : _fields[j];
+
+					if (_config.transform)
+						value = _config.transform(value,field);
+
+					value = parseDynamic(field, value);
+
+					if (field === '__parsed_extra')
+					{
+						row[field] = row[field] || [];
+						row[field].push(value);
+					}
+					else
+						row[field] = value;
+				}
+
+
+				if (_config.header)
+				{
+					if (j > _fields.length)
+						addError('FieldMismatch', 'TooManyFields', 'Too many fields: expected ' + _fields.length + ' fields but parsed ' + j, _rowCounter + i);
+					else if (j < _fields.length)
+						addError('FieldMismatch', 'TooFewFields', 'Too few fields: expected ' + _fields.length + ' fields but parsed ' + j, _rowCounter + i);
+				}
+
+				return row;
+			}
+
+			var incrementBy = 1;
+			if (!_results.data.length || Array.isArray(_results.data[0]))
+			{
+				_results.data = _results.data.map(processRow);
+				incrementBy = _results.data.length;
+			}
+			else
+				_results.data = processRow(_results.data, 0);
+
+
+			if (_config.header && _results.meta)
+				_results.meta.fields = _fields;
+
+			_rowCounter += incrementBy;
+			return _results;
+		}
+
+		function guessDelimiter(input, newline, skipEmptyLines, comments, delimitersToGuess) {
+			var bestDelim, bestDelta, fieldCountPrevRow, maxFieldCount;
+
+			delimitersToGuess = delimitersToGuess || [',', '\t', '|', ';', Papa.RECORD_SEP, Papa.UNIT_SEP];
+
+			for (var i = 0; i < delimitersToGuess.length; i++) {
+				var delim = delimitersToGuess[i];
+				var delta = 0, avgFieldCount = 0, emptyLinesCount = 0;
+				fieldCountPrevRow = undefined;
+
+				var preview = new Parser({
+					comments: comments,
+					delimiter: delim,
+					newline: newline,
+					preview: 10
+				}).parse(input);
+
+				for (var j = 0; j < preview.data.length; j++) {
+					if (skipEmptyLines && testEmptyLine(preview.data[j])) {
+						emptyLinesCount++;
+						continue;
+					}
+					var fieldCount = preview.data[j].length;
+					avgFieldCount += fieldCount;
+
+					if (typeof fieldCountPrevRow === 'undefined') {
+						fieldCountPrevRow = fieldCount;
+						continue;
+					}
+					else if (fieldCount > 0) {
+						delta += Math.abs(fieldCount - fieldCountPrevRow);
+						fieldCountPrevRow = fieldCount;
+					}
+				}
+
+				if (preview.data.length > 0)
+					avgFieldCount /= (preview.data.length - emptyLinesCount);
+
+				if ((typeof bestDelta === 'undefined' || delta <= bestDelta)
+					&& (typeof maxFieldCount === 'undefined' || avgFieldCount > maxFieldCount) && avgFieldCount > 1.99) {
+					bestDelta = delta;
+					bestDelim = delim;
+					maxFieldCount = avgFieldCount;
+				}
+			}
+
+			_config.delimiter = bestDelim;
+
+			return {
+				successful: !!bestDelim,
+				bestDelimiter: bestDelim
+			};
+		}
+
+		function addError(type, code, msg, row)
+		{
+			var error = {
+				type: type,
+				code: code,
+				message: msg
+			};
+			if(row !== undefined) {
+				error.row = row;
+			}
+			_results.errors.push(error);
+		}
+	}
+
+	/** https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions */
+	function escapeRegExp(string)
+	{
+		return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+	}
+
+	/** The core parser implements speedy and correct CSV parsing */
+	function Parser(config)
+	{
+		// Unpack the config object
+		config = config || {};
+		var delim = config.delimiter;
+		var newline = config.newline;
+		var comments = config.comments;
+		var step = config.step;
+		var preview = config.preview;
+		var fastMode = config.fastMode;
+		var quoteChar;
+		var renamedHeaders = null;
+		var headerParsed = false;
+
+		if (config.quoteChar === undefined || config.quoteChar === null) {
+			quoteChar = '"';
+		} else {
+			quoteChar = config.quoteChar;
+		}
+		var escapeChar = quoteChar;
+		if (config.escapeChar !== undefined) {
+			escapeChar = config.escapeChar;
+		}
+
+		// Delimiter must be valid
+		if (typeof delim !== 'string'
+			|| Papa.BAD_DELIMITERS.indexOf(delim) > -1)
+			delim = ',';
+
+		// Comment character must be valid
+		if (comments === delim)
+			throw new Error('Comment character same as delimiter');
+		else if (comments === true)
+			comments = '#';
+		else if (typeof comments !== 'string'
+			|| Papa.BAD_DELIMITERS.indexOf(comments) > -1)
+			comments = false;
+
+		// Newline must be valid: \r, \n, or \r\n
+		if (newline !== '\n' && newline !== '\r' && newline !== '\r\n')
+			newline = '\n';
+
+		// We're gonna need these at the Parser scope
+		var cursor = 0;
+		var aborted = false;
+
+		this.parse = function(input, baseIndex, ignoreLastRow)
+		{
+			// For some reason, in Chrome, this speeds things up (!?)
+			if (typeof input !== 'string')
+				throw new Error('Input must be a string');
+
+			// We don't need to compute some of these every time parse() is called,
+			// but having them in a more local scope seems to perform better
+			var inputLen = input.length,
+				delimLen = delim.length,
+				newlineLen = newline.length,
+				commentsLen = comments.length;
+			var stepIsFunction = isFunction(step);
+
+			// Establish starting state
+			cursor = 0;
+			var data = [], errors = [], row = [], lastCursor = 0;
+
+			if (!input)
+				return returnable();
+
+			if (fastMode || (fastMode !== false && input.indexOf(quoteChar) === -1))
+			{
+				var rows = input.split(newline);
+				for (var i = 0; i < rows.length; i++)
+				{
+					row = rows[i];
+					cursor += row.length;
+
+					if (i !== rows.length - 1)
+						cursor += newline.length;
+					else if (ignoreLastRow)
+						return returnable();
+					if (comments && row.substring(0, commentsLen) === comments)
+						continue;
+					if (stepIsFunction)
+					{
+						data = [];
+						pushRow(row.split(delim));
+						doStep();
+						if (aborted)
+							return returnable();
+					}
+					else
+						pushRow(row.split(delim));
+					if (preview && i >= preview)
+					{
+						data = data.slice(0, preview);
+						return returnable(true);
+					}
+				}
+				return returnable();
+			}
+
+			var nextDelim = input.indexOf(delim, cursor);
+			var nextNewline = input.indexOf(newline, cursor);
+			var quoteCharRegex = new RegExp(escapeRegExp(escapeChar) + escapeRegExp(quoteChar), 'g');
+			var quoteSearch = input.indexOf(quoteChar, cursor);
+
+			// Parser loop
+			for (;;)
+			{
+				// Field has opening quote
+				if (input[cursor] === quoteChar)
+				{
+					// Start our search for the closing quote where the cursor is
+					quoteSearch = cursor;
+
+					// Skip the opening quote
+					cursor++;
+
+					for (;;)
+					{
+						// Find closing quote
+						quoteSearch = input.indexOf(quoteChar, quoteSearch + 1);
+
+						//No other quotes are found - no other delimiters
+						if (quoteSearch === -1)
+						{
+							if (!ignoreLastRow) {
+								// No closing quote... what a pity
+								errors.push({
+									type: 'Quotes',
+									code: 'MissingQuotes',
+									message: 'Quoted field unterminated',
+									row: data.length,	// row has yet to be inserted
+									index: cursor
+								});
+							}
+							return finish();
+						}
+
+						// Closing quote at EOF
+						if (quoteSearch === inputLen - 1)
+						{
+							var value = input.substring(cursor, quoteSearch).replace(quoteCharRegex, quoteChar);
+							return finish(value);
+						}
+
+						// If this quote is escaped, it's part of the data; skip it
+						// If the quote character is the escape character, then check if the next character is the escape character
+						if (quoteChar === escapeChar &&  input[quoteSearch + 1] === escapeChar)
+						{
+							quoteSearch++;
+							continue;
+						}
+
+						// If the quote character is not the escape character, then check if the previous character was the escape character
+						if (quoteChar !== escapeChar && quoteSearch !== 0 && input[quoteSearch - 1] === escapeChar)
+						{
+							continue;
+						}
+
+						if(nextDelim !== -1 && nextDelim < (quoteSearch + 1)) {
+							nextDelim = input.indexOf(delim, (quoteSearch + 1));
+						}
+						if(nextNewline !== -1 && nextNewline < (quoteSearch + 1)) {
+							nextNewline = input.indexOf(newline, (quoteSearch + 1));
+						}
+						// Check up to nextDelim or nextNewline, whichever is closest
+						var checkUpTo = nextNewline === -1 ? nextDelim : Math.min(nextDelim, nextNewline);
+						var spacesBetweenQuoteAndDelimiter = extraSpaces(checkUpTo);
+
+						// Closing quote followed by delimiter or 'unnecessary spaces + delimiter'
+						if (input.substr(quoteSearch + 1 + spacesBetweenQuoteAndDelimiter, delimLen) === delim)
+						{
+							row.push(input.substring(cursor, quoteSearch).replace(quoteCharRegex, quoteChar));
+							cursor = quoteSearch + 1 + spacesBetweenQuoteAndDelimiter + delimLen;
+
+							// If char after following delimiter is not quoteChar, we find next quote char position
+							if (input[quoteSearch + 1 + spacesBetweenQuoteAndDelimiter + delimLen] !== quoteChar)
+							{
+								quoteSearch = input.indexOf(quoteChar, cursor);
+							}
+							nextDelim = input.indexOf(delim, cursor);
+							nextNewline = input.indexOf(newline, cursor);
+							break;
+						}
+
+						var spacesBetweenQuoteAndNewLine = extraSpaces(nextNewline);
+
+						// Closing quote followed by newline or 'unnecessary spaces + newLine'
+						if (input.substring(quoteSearch + 1 + spacesBetweenQuoteAndNewLine, quoteSearch + 1 + spacesBetweenQuoteAndNewLine + newlineLen) === newline)
+						{
+							row.push(input.substring(cursor, quoteSearch).replace(quoteCharRegex, quoteChar));
+							saveRow(quoteSearch + 1 + spacesBetweenQuoteAndNewLine + newlineLen);
+							nextDelim = input.indexOf(delim, cursor);	// because we may have skipped the nextDelim in the quoted field
+							quoteSearch = input.indexOf(quoteChar, cursor);	// we search for first quote in next line
+
+							if (stepIsFunction)
+							{
+								doStep();
+								if (aborted)
+									return returnable();
+							}
+
+							if (preview && data.length >= preview)
+								return returnable(true);
+
+							break;
+						}
+
+
+						// Checks for valid closing quotes are complete (escaped quotes or quote followed by EOF/delimiter/newline) -- assume these quotes are part of an invalid text string
+						errors.push({
+							type: 'Quotes',
+							code: 'InvalidQuotes',
+							message: 'Trailing quote on quoted field is malformed',
+							row: data.length,	// row has yet to be inserted
+							index: cursor
+						});
+
+						quoteSearch++;
+						continue;
+
+					}
+
+					continue;
+				}
+
+				// Comment found at start of new line
+				if (comments && row.length === 0 && input.substring(cursor, cursor + commentsLen) === comments)
+				{
+					if (nextNewline === -1)	// Comment ends at EOF
+						return returnable();
+					cursor = nextNewline + newlineLen;
+					nextNewline = input.indexOf(newline, cursor);
+					nextDelim = input.indexOf(delim, cursor);
+					continue;
+				}
+
+				// Next delimiter comes before next newline, so we've reached end of field
+				if (nextDelim !== -1 && (nextDelim < nextNewline || nextNewline === -1))
+				{
+					row.push(input.substring(cursor, nextDelim));
+					cursor = nextDelim + delimLen;
+					// we look for next delimiter char
+					nextDelim = input.indexOf(delim, cursor);
+					continue;
+				}
+
+				// End of row
+				if (nextNewline !== -1)
+				{
+					row.push(input.substring(cursor, nextNewline));
+					saveRow(nextNewline + newlineLen);
+
+					if (stepIsFunction)
+					{
+						doStep();
+						if (aborted)
+							return returnable();
+					}
+
+					if (preview && data.length >= preview)
+						return returnable(true);
+
+					continue;
+				}
+
+				break;
+			}
+
+			return finish();
+
+
+			function pushRow(row)
+			{
+				data.push(row);
+				lastCursor = cursor;
+			}
+
+			/**
+             * checks if there are extra spaces after closing quote and given index without any text
+             * if Yes, returns the number of spaces
+             */
+			function extraSpaces(index) {
+				var spaceLength = 0;
+				if (index !== -1) {
+					var textBetweenClosingQuoteAndIndex = input.substring(quoteSearch + 1, index);
+					if (textBetweenClosingQuoteAndIndex && textBetweenClosingQuoteAndIndex.trim() === '') {
+						spaceLength = textBetweenClosingQuoteAndIndex.length;
+					}
+				}
+				return spaceLength;
+			}
+
+			/**
+			 * Appends the remaining input from cursor to the end into
+			 * row, saves the row, calls step, and returns the results.
+			 */
+			function finish(value)
+			{
+				if (ignoreLastRow)
+					return returnable();
+				if (typeof value === 'undefined')
+					value = input.substring(cursor);
+				row.push(value);
+				cursor = inputLen;	// important in case parsing is paused
+				pushRow(row);
+				if (stepIsFunction)
+					doStep();
+				return returnable();
+			}
+
+			/**
+			 * Appends the current row to the results. It sets the cursor
+			 * to newCursor and finds the nextNewline. The caller should
+			 * take care to execute user's step function and check for
+			 * preview and end parsing if necessary.
+			 */
+			function saveRow(newCursor)
+			{
+				cursor = newCursor;
+				pushRow(row);
+				row = [];
+				nextNewline = input.indexOf(newline, cursor);
+			}
+
+			/** Returns an object with the results, errors, and meta. */
+			function returnable(stopped)
+			{
+				if (config.header && !baseIndex && data.length && !headerParsed)
+				{
+					const result = data[0];
+					const headerCount = Object.create(null); // To track the count of each base header
+					const usedHeaders = new Set(result); // To track used headers and avoid duplicates
+					let duplicateHeaders = false;
+
+					for (let i = 0; i < result.length; i++) {
+						let header = result[i];
+						if (isFunction(config.transformHeader))
+							header = config.transformHeader(header, i);
+
+						if (!headerCount[header]) {
+							headerCount[header] = 1;
+							result[i] = header;
+						} else {
+							let newHeader;
+							let suffixCount = headerCount[header];
+
+							// Find a unique new header
+							do {
+								newHeader = `${header}_${suffixCount}`;
+								suffixCount++;
+							} while (usedHeaders.has(newHeader));
+
+							usedHeaders.add(newHeader); // Mark this new Header as used
+							result[i] = newHeader;
+							headerCount[header]++;
+							duplicateHeaders = true;
+							if (renamedHeaders === null) {
+								renamedHeaders = {};
+							}
+							renamedHeaders[newHeader] = header;
+						}
+
+						usedHeaders.add(header); // Ensure the original header is marked as used
+					}
+					if (duplicateHeaders) {
+						console.warn('Duplicate headers found and renamed.');
+					}
+					headerParsed = true;
+				}
+				return {
+					data: data,
+					errors: errors,
+					meta: {
+						delimiter: delim,
+						linebreak: newline,
+						aborted: aborted,
+						truncated: !!stopped,
+						cursor: lastCursor + (baseIndex || 0),
+						renamedHeaders: renamedHeaders
+					}
+				};
+			}
+
+			/** Executes the user's step function and resets data & errors. */
+			function doStep()
+			{
+				step(returnable());
+				data = [];
+				errors = [];
+			}
+		};
+
+		/** Sets the abort flag */
+		this.abort = function()
+		{
+			aborted = true;
+		};
+
+		/** Gets the cursor position */
+		this.getCharIndex = function()
+		{
+			return cursor;
+		};
+	}
+
+
+	function newWorker()
+	{
+		if (!Papa.WORKERS_SUPPORTED)
+			return false;
+
+		var workerUrl = getWorkerBlob();
+		var w = new global.Worker(workerUrl);
+		w.onmessage = mainThreadReceivedMessage;
+		w.id = workerIdCounter++;
+		workers[w.id] = w;
+		return w;
+	}
+
+	/** Callback when main thread receives a message */
+	function mainThreadReceivedMessage(e)
+	{
+		var msg = e.data;
+		var worker = workers[msg.workerId];
+		var aborted = false;
+
+		if (msg.error)
+			worker.userError(msg.error, msg.file);
+		else if (msg.results && msg.results.data)
+		{
+			var abort = function() {
+				aborted = true;
+				completeWorker(msg.workerId, { data: [], errors: [], meta: { aborted: true } });
+			};
+
+			var handle = {
+				abort: abort,
+				pause: notImplemented,
+				resume: notImplemented
+			};
+
+			if (isFunction(worker.userStep))
+			{
+				for (var i = 0; i < msg.results.data.length; i++)
+				{
+					worker.userStep({
+						data: msg.results.data[i],
+						errors: msg.results.errors,
+						meta: msg.results.meta
+					}, handle);
+					if (aborted)
+						break;
+				}
+				delete msg.results;	// free memory ASAP
+			}
+			else if (isFunction(worker.userChunk))
+			{
+				worker.userChunk(msg.results, handle, msg.file);
+				delete msg.results;
+			}
+		}
+
+		if (msg.finished && !aborted)
+			completeWorker(msg.workerId, msg.results);
+	}
+
+	function completeWorker(workerId, results) {
+		var worker = workers[workerId];
+		if (isFunction(worker.userComplete))
+			worker.userComplete(results);
+		worker.terminate();
+		delete workers[workerId];
+	}
+
+	function notImplemented() {
+		throw new Error('Not implemented.');
+	}
+
+	/** Callback when worker thread receives a message */
+	function workerThreadReceivedMessage(e)
+	{
+		var msg = e.data;
+
+		if (typeof Papa.WORKER_ID === 'undefined' && msg)
+			Papa.WORKER_ID = msg.workerId;
+
+		if (typeof msg.input === 'string')
+		{
+			global.postMessage({
+				workerId: Papa.WORKER_ID,
+				results: Papa.parse(msg.input, msg.config),
+				finished: true
+			});
+		}
+		else if ((global.File && msg.input instanceof File) || msg.input instanceof Object)	// thank you, Safari (see issue #106)
+		{
+			var results = Papa.parse(msg.input, msg.config);
+			if (results)
+				global.postMessage({
+					workerId: Papa.WORKER_ID,
+					results: results,
+					finished: true
+				});
+		}
+	}
+
+	/** Makes a deep copy of an array or object (mostly) */
+	function copy(obj)
+	{
+		if (typeof obj !== 'object' || obj === null)
+			return obj;
+		var cpy = Array.isArray(obj) ? [] : {};
+		for (var key in obj)
+			cpy[key] = copy(obj[key]);
+		return cpy;
+	}
+
+	function bindFunction(f, self)
+	{
+		return function() { f.apply(self, arguments); };
+	}
+	function isFunction(func)
+	{
+		return typeof func === 'function';
+	}
+
+	return Papa;
+}));
+
+</script>
+<script>
+
 const state = { kpis:[], okrs:[], budget:[] };
-let kpiChart, budgetChart;
 
-// ---- Drag helpers ----
+function num(v){ return parseFloat(String(v||'').replace(/[^0-9.-]/g,''))||0; }
+
 function ev(e){ e.preventDefault(); }
-function drop(e, type){ e.preventDefault(); const f=e.dataTransfer.files[0]; if(f) readCSV(f,type); }
-function loadFile(e, type){ const f=e.target.files[0]; if(f) readCSV(f,type); }
+function drop(e,t){ e.preventDefault(); const f=e.dataTransfer.files[0]; if(f) readCSV(f,t); }
+function loadFile(e,t){ const f=e.target.files[0]; if(f) readCSV(f,t); }
+function readCSV(file,type){ const r=new FileReader(); r.onload=e=>parseData(e.target.result,type); r.readAsText(file); }
 
-function readCSV(file, type){
-  const r=new FileReader();
-  r.onload=e=>parseData(e.target.result, type);
-  r.readAsText(file);
-}
-
-function num(v){ return parseFloat((v||'').replace(/[^0-9.-]/g,''))||0; }
-
-function parseData(csv, type){
+function parseData(csv,type){
   const {data}=Papa.parse(csv,{header:true,skipEmptyLines:true});
   if(type==='kpi'){
     state.kpis=data.map(r=>({metric:r.metric||r.Metric||r.name||'',target:num(r.target||r.Target),actual:num(r.actual||r.Actual),unit:r.unit||r.Unit||''})).filter(r=>r.metric);
-    mark('kpi', state.kpis.length);
+    mark('kpi',state.kpis.length);
   } else if(type==='okr'){
     state.okrs=data.map(r=>({objective:r.objective||r.Objective||'',keyResult:r.key_result||r['key result']||r['Key Result']||'',target:num(r.target||r.Target),actual:num(r.actual||r.Actual),unit:r.unit||r.Unit||'%'})).filter(r=>r.objective);
-    mark('okr', state.okrs.length);
+    mark('okr',state.okrs.length);
   } else {
     state.budget=data.map(r=>({category:r.category||r.Category||r.name||'',budgeted:num(r.budgeted||r.Budgeted||r.budget||r.Budget),actual:num(r.actual||r.Actual)})).filter(r=>r.category);
-    mark('budget', state.budget.length);
+    mark('budget',state.budget.length);
   }
   updateSummary();
 }
 
-function mark(type, n){
+function mark(type,n){
   document.getElementById(type+'-icon').textContent='✅';
-  document.getElementById(type+'-status').textContent=`✓ ${n} rows loaded`;
-  document.getElementById(type+'-drop').classList.add('border-emerald-400','bg-emerald-50');
-  document.getElementById(type+'-drop').classList.remove('border-gray-300','hover:border-gray-400','bg-white');
+  document.getElementById(type+'-status').textContent='✓ '+n+' rows loaded';
+  document.getElementById(type+'-drop').classList.add('done');
 }
 
 function updateSummary(){
@@ -230,177 +2196,218 @@ function updateSummary(){
   const box=document.getElementById('data-summary');
   if(has){
     box.classList.remove('hidden');
-    box.innerHTML='Loaded: '
-      +(state.kpis.length?`<span class="font-medium text-gray-800 mr-3">✓ ${state.kpis.length} KPIs</span>`:'')
-      +(state.okrs.length?`<span class="font-medium text-gray-800 mr-3">✓ ${state.okrs.length} Key Results</span>`:'')
-      +(state.budget.length?`<span class="font-medium text-gray-800">✓ ${state.budget.length} Budget lines</span>`:'');
+    let t='Loaded: ';
+    if(state.kpis.length) t+='<strong>'+state.kpis.length+' KPIs</strong>  ';
+    if(state.okrs.length) t+='<strong>'+state.okrs.length+' Key Results</strong>  ';
+    if(state.budget.length) t+='<strong>'+state.budget.length+' Budget lines</strong>';
+    box.innerHTML=t;
     document.getElementById('gen-btn').disabled=false;
   }
 }
 
-// ---- Sample data ----
 function loadSample(){
-  parseData(`metric,target,actual,unit\nMonthly Revenue,500000,487000,$\nCustomer Churn,2,2.8,%\nNPS Score,50,62,\nNew Customers,200,231,\nSupport CSAT,90,88,%`,'kpi');
-  parseData(`objective,key_result,target,actual,unit\nGrow Revenue,Reach $2M ARR,2000000,1948000,$\nGrow Revenue,Expand to 3 new markets,3,2,\nImprove Retention,Reduce churn below 2%,2,2.8,%\nImprove Retention,Launch loyalty program,1,1,\nScale Engineering,Hire 5 engineers,5,4,`,'okr');
-  parseData(`category,budgeted,actual\nEngineering,400000,423000\nMarketing,150000,138000\nSales,200000,197000\nOperations,80000,91000\nProduct,100000,103000`,'budget');
-}
-
-// ---- Static insights (mirrors what Claude would generate) ----
-const INSIGHTS={
-  summary:`Acme Corp closed Q1 2025 with a mixed but largely positive performance. Revenue came in at $487K against a $500K target — a 2.6% miss — driven by slower market expansion than planned. Encouragingly, NPS hit 62 (target: 50) and new customer acquisition exceeded goal by 15.5%, signalling strong product-market fit and healthy top-of-funnel momentum.\n\nRetention remains a concern: churn rose to 2.8% versus the 2% target, outpacing new customer growth in lifetime value terms. Budget discipline was solid in Marketing and Sales, though Engineering and Operations overran by 5.75% and 13.75% respectively, partially due to unplanned infrastructure scaling costs.\n\nOverall, Q1 lays a solid foundation: the pipeline is strong, customer satisfaction is high, and core OKRs are tracking above 80% completion. The priorities for Q2 should be arresting churn and tightening operational spend.`,
-  kpiInsight:`NPS and new customer acquisition exceeded targets by 24% and 15.5% respectively — standout wins. Monthly revenue missed by 2.6% and churn overshot its target by 40%, which together represent the key risk heading into Q2.`,
-  okrInsight:`3 of 5 key results are on track or complete. Revenue ARR is at 97% of target; market expansion (67%) and engineer hiring (80%) are lagging and need focused attention in Q2.`,
-  budgetInsight:`Total spend came in $26K over budget (+3.8%). Engineering (+$23K) and Operations (+$11K) were the largest overruns. Marketing saved $12K, providing partial offset. The overruns are largely one-time infrastructure costs.`,
-  recommendations:[
-    '🎯 Launch a targeted churn-reduction program — identify at-risk accounts and deploy CS resources before Q2 mid-point.',
-    '📈 Accelerate market expansion: two markets remain unopened; assign dedicated BD ownership with a Q2 deadline.',
-    '💰 Audit Engineering and Operations spend — establish monthly budget checkpoints to prevent repeat overruns.',
-    '🚀 Double down on top-of-funnel — NPS of 62 is a referral engine; launch a structured referral program in Q2.',
-    '👥 Fast-track the remaining engineering hire to unblock roadmap capacity for H2 growth initiatives.',
-  ]
-};
-
-// ---- Generate Report ----
-function generateReport(){
-  const company=document.getElementById('company').value||'Company';
-  const quarter=document.getElementById('quarter').value||'Q';
-
-  document.getElementById('r-company').textContent=company;
-  document.getElementById('r-quarter').textContent=quarter;
-  document.getElementById('r-summary').innerHTML=INSIGHTS.summary.replace(/\n\n/g,'</p><p class="text-sm text-gray-700 leading-relaxed mt-3">');
-
-  const recEl=document.getElementById('r-recommendations');
-  recEl.innerHTML=INSIGHTS.recommendations.map(r=>`<p>${r}</p>`).join('');
-
-  renderKPIs();
-  renderOKRs();
-  renderBudget();
-
-  document.getElementById('upload-step').classList.add('hidden');
-  document.getElementById('report-step').classList.remove('hidden');
-  document.getElementById('report-actions').classList.remove('hidden');
-  window.scrollTo(0,0);
+  state.kpis=[
+    {metric:'Monthly Revenue',target:500000,actual:487000,unit:'$'},
+    {metric:'Customer Churn',target:2,actual:2.8,unit:'%'},
+    {metric:'NPS Score',target:50,actual:62,unit:''},
+    {metric:'New Customers',target:200,actual:231,unit:''},
+    {metric:'Support CSAT',target:90,actual:88,unit:'%'}
+  ];
+  state.okrs=[
+    {objective:'Grow Revenue',keyResult:'Reach $2M ARR',target:2000000,actual:1948000,unit:'$'},
+    {objective:'Grow Revenue',keyResult:'Expand to 3 new markets',target:3,actual:2,unit:''},
+    {objective:'Improve Retention',keyResult:'Reduce churn below 2%',target:2,actual:2.8,unit:'%'},
+    {objective:'Improve Retention',keyResult:'Launch loyalty program',target:1,actual:1,unit:''},
+    {objective:'Scale Engineering',keyResult:'Hire 5 engineers',target:5,actual:4,unit:''}
+  ];
+  state.budget=[
+    {category:'Engineering',budgeted:400000,actual:423000},
+    {category:'Marketing',budgeted:150000,actual:138000},
+    {category:'Sales',budgeted:200000,actual:197000},
+    {category:'Operations',budgeted:80000,actual:91000},
+    {category:'Product',budgeted:100000,actual:103000}
+  ];
+  mark('kpi',state.kpis.length);
+  mark('okr',state.okrs.length);
+  mark('budget',state.budget.length);
+  updateSummary();
 }
 
 function showUpload(){
   document.getElementById('upload-step').classList.remove('hidden');
   document.getElementById('report-step').classList.add('hidden');
   document.getElementById('report-actions').classList.add('hidden');
+  document.getElementById('report-actions').style.display='';
 }
 
-// ---- KPI Render ----
+function generateReport(){
+  const company=document.getElementById('company').value||'Company';
+  const quarter=document.getElementById('quarter').value||'Q';
+  document.getElementById('r-company').textContent=company;
+  document.getElementById('r-quarter').textContent=quarter;
+
+  document.getElementById('r-summary').innerHTML=
+    '<p>'+company+' closed '+quarter+' with a mixed but largely positive performance. Revenue came in at $487K against a $500K target — a 2.6% miss — driven by slower market expansion than planned. Encouragingly, NPS hit 62 (target: 50) and new customer acquisition exceeded goal by 15.5%, signalling strong product-market fit.</p>'+
+    '<p style="margin-top:10px">Retention remains a concern: churn rose to 2.8% versus the 2% target. Budget discipline was solid in Marketing and Sales, though Engineering and Operations overran their budgets, partially due to unplanned infrastructure scaling costs.</p>';
+
+  document.getElementById('r-recs').innerHTML=[
+    '🎯 Launch a targeted churn-reduction program — identify at-risk accounts before Q2 mid-point.',
+    '📈 Accelerate market expansion: two markets remain unopened; assign dedicated BD ownership.',
+    '💰 Audit Engineering and Operations spend — establish monthly budget checkpoints.',
+    '🚀 Double down on top-of-funnel — NPS of 62 is a referral engine; launch a referral program.',
+    '👥 Fast-track the remaining engineering hire to unblock roadmap capacity.'
+  ].map(r=>'<div style="margin-bottom:6px">'+r+'</div>').join('');
+
+  renderKPIs(); renderOKRs(); renderBudget();
+
+  document.getElementById('upload-step').classList.add('hidden');
+  document.getElementById('report-step').classList.remove('hidden');
+  document.getElementById('report-actions').classList.remove('hidden');
+  document.getElementById('report-actions').style.display='flex';
+  window.scrollTo(0,0);
+}
+
+// ---- SVG bar chart ----
+function svgBars(el, labels, datasets, height){
+  const W=800, barH=22, gap=6, groupGap=16, padL=140, padR=20, padT=10, padB=30;
+  const n=labels.length, nb=datasets.length;
+  const groupH=nb*barH+(nb-1)*gap;
+  const totalH=padT+n*(groupH+groupGap)+padB;
+  const maxV=Math.max(...datasets.flatMap(d=>d.data));
+  const scale=(W-padL-padR)/maxV;
+
+  let svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W+' '+totalH+'" width="100%" style="display:block">';
+
+  // grid lines
+  [0,.25,.5,.75,1].forEach(f=>{
+    const x=padL+f*(W-padL-padR);
+    svg+='<line x1="'+x+'" y1="'+padT+'" x2="'+x+'" y2="'+(totalH-padB)+'" stroke="#e2e8f0" stroke-width="1"/>';
+    svg+='<text x="'+x+'" y="'+(totalH-padB+14)+'" text-anchor="middle" font-size="10" fill="#94a3b8">'+fmt2(maxV*f)+'</text>';
+  });
+
+  labels.forEach((lbl,i)=>{
+    const y0=padT+i*(groupH+groupGap);
+    svg+='<text x="'+(padL-8)+'" y="'+(y0+groupH/2+4)+'" text-anchor="end" font-size="11" fill="#475569">'+lbl+'</text>';
+    datasets.forEach((ds,di)=>{
+      const v=ds.data[i], w=Math.max(2,v*scale);
+      const y=y0+di*(barH+gap);
+      svg+='<rect x="'+padL+'" y="'+y+'" width="'+w+'" height="'+barH+'" rx="4" fill="'+ds.color+'"/>';
+      svg+='<text x="'+(padL+w+4)+'" y="'+(y+barH/2+4)+'" font-size="10" fill="#475569">'+fmt2(v)+'</text>';
+    });
+  });
+
+  // legend
+  datasets.forEach((ds,i)=>{
+    const lx=padL+i*120;
+    svg+='<rect x="'+lx+'" y="'+(totalH-14)+'" width="12" height="12" rx="3" fill="'+ds.color+'"/>';
+    svg+='<text x="'+(lx+16)+'" y="'+(totalH-4)+'" font-size="11" fill="#475569">'+ds.label+'</text>';
+  });
+
+  svg+='</svg>';
+  el.innerHTML=svg;
+}
+
+function svgVarianceBars(el, labels, values){
+  const W=800, barH=24, gap=8, padL=120, padR=60, padT=10, padB=30;
+  const n=labels.length;
+  const totalH=padT+n*(barH+gap)+padB;
+  const absMax=Math.max(...values.map(Math.abs));
+  const scale=(W-padL-padR)/2/absMax;
+  const midX=padL+(W-padL-padR)/2;
+
+  let svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W+' '+totalH+'" width="100%" style="display:block">';
+  svg+='<line x1="'+midX+'" y1="'+padT+'" x2="'+midX+'" y2="'+(totalH-padB)+'" stroke="#94a3b8" stroke-width="1.5"/>';
+
+  labels.forEach((lbl,i)=>{
+    const v=values[i], y=padT+i*(barH+gap);
+    const color=v<=0?'#10b981':'#f87171';
+    const w=Math.max(2,Math.abs(v)*scale);
+    const x=v<=0?midX-w:midX;
+    svg+='<text x="'+(padL-8)+'" y="'+(y+barH/2+4)+'" text-anchor="end" font-size="11" fill="#475569">'+lbl+'</text>';
+    svg+='<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+barH+'" rx="4" fill="'+color+'"/>';
+    const lblX=v<=0?midX-w-4:midX+w+4;
+    const anchor=v<=0?'end':'start';
+    svg+='<text x="'+lblX+'" y="'+(y+barH/2+4)+'" text-anchor="'+anchor+'" font-size="10" fill="#475569">'+(v>0?'+':'')+fmt2(v)+'</text>';
+  });
+  svg+='</svg>';
+  el.innerHTML=svg;
+}
+
+function fmt2(n){
+  if(Math.abs(n)>=1000000) return '$'+(n/1000000).toFixed(1)+'M';
+  if(Math.abs(n)>=1000) return '$'+(n/1000).toFixed(0)+'K';
+  return n.toFixed(1);
+}
+function fmtC(n){ return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',notation:'compact'}).format(n); }
+
 function renderKPIs(){
   if(!state.kpis.length) return;
   document.getElementById('kpi-section').classList.remove('hidden');
-  document.getElementById('kpi-insight').textContent=INSIGHTS.kpiInsight;
+  document.getElementById('kpi-insight').textContent='NPS and new customer acquisition exceeded targets by 24% and 15.5% respectively. Monthly revenue missed by 2.6% and churn overshot its target by 40%, which represent the key risk heading into Q2.';
 
-  const labels=state.kpis.map(k=>k.metric);
-  const targets=state.kpis.map(k=>k.target);
-  const actuals=state.kpis.map(k=>k.actual);
-  const colors=state.kpis.map(k=>k.actual>=k.target?'#10b981':'#f87171');
+  svgBars(
+    document.getElementById('kpi-svg'),
+    state.kpis.map(k=>k.metric),
+    [
+      {label:'Target',data:state.kpis.map(k=>k.target),color:'#94a3b8'},
+      {label:'Actual',data:state.kpis.map(k=>k.actual),color:'#3b82f6'}
+    ]
+  );
 
-  if(kpiChart) kpiChart.destroy();
-  kpiChart=new Chart(document.getElementById('kpi-chart'),{
-    type:'bar',
-    data:{labels,datasets:[
-      {label:'Target',data:targets,backgroundColor:'#94a3b8',borderRadius:4},
-      {label:'Actual',data:actuals,backgroundColor:colors,borderRadius:4}
-    ]},
-    options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true}}}
-  });
-
-  const tbody=document.getElementById('kpi-table');
-  tbody.innerHTML=state.kpis.map(k=>{
+  document.getElementById('kpi-table').innerHTML=state.kpis.map(k=>{
     const delta=k.target?((k.actual-k.target)/k.target*100):0;
     const met=k.actual>=k.target;
-    return `<tr class="border-b border-gray-100 hover:bg-gray-50">
-      <td class="p-3 font-medium text-gray-800">${k.metric}</td>
-      <td class="p-3 text-right text-gray-600">${k.target}${k.unit}</td>
-      <td class="p-3 text-right font-semibold text-gray-800">${k.actual}${k.unit}</td>
-      <td class="p-3 text-right font-medium ${met?'text-emerald-600':'text-red-500'}">${delta>=0?'+':''}${delta.toFixed(1)}%</td>
-      <td class="p-3 text-center"><span class="px-2 py-0.5 rounded-full text-xs font-medium ${met?'bg-emerald-100 text-emerald-700':'bg-red-100 text-red-600'}">${met?'On Track':'Off Track'}</span></td>
-    </tr>`;
+    return '<tr><td style="font-weight:600">'+k.metric+'</td><td style="text-align:right;color:#64748b">'+k.target+k.unit+'</td><td style="text-align:right;font-weight:700">'+k.actual+k.unit+'</td><td style="text-align:right;color:'+(met?'#16a34a':'#dc2626')+';font-weight:600">'+(delta>=0?'+':'')+delta.toFixed(1)+'%</td><td style="text-align:center"><span class="badge '+(met?'badge-green':'badge-red')+'">'+(met?'On Track':'Off Track')+'</span></td></tr>';
   }).join('');
 }
 
-// ---- OKR Render ----
 function renderOKRs(){
   if(!state.okrs.length) return;
   document.getElementById('okr-section').classList.remove('hidden');
-  document.getElementById('okr-insight').textContent=INSIGHTS.okrInsight;
+  document.getElementById('okr-insight').textContent='3 of 5 key results are on track or complete. Revenue ARR is at 97% of target; market expansion (67%) and engineer hiring (80%) need focused attention in Q2.';
 
   const grouped={};
   state.okrs.forEach(r=>{ if(!grouped[r.objective]) grouped[r.objective]=[]; grouped[r.objective].push(r); });
 
   document.getElementById('okr-cards').innerHTML=Object.entries(grouped).map(([obj,results])=>{
     const avg=results.reduce((s,r)=>s+(r.target>0?(r.actual/r.target*100):0),0)/results.length;
-    const color=avg>=80?'#10b981':avg>=50?'#f59e0b':'#f87171';
+    const color=avg>=80?'#16a34a':avg>=50?'#d97706':'#dc2626';
     const bars=results.map(r=>{
       const pct=Math.min(100,r.target>0?(r.actual/r.target*100):0);
       const c=pct>=80?'#10b981':pct>=50?'#f59e0b':'#f87171';
-      return `<div>
-        <div class="flex justify-between text-xs text-gray-600 mb-1"><span>${r.keyResult}</span><span class="font-medium">${r.actual}${r.unit} / ${r.target}${r.unit}</span></div>
-        <div class="flex items-center gap-2">
-          <div class="flex-1 bg-gray-100 rounded-full h-2"><div class="h-2 rounded-full" style="width:${pct}%;background:${c}"></div></div>
-          <span class="text-xs font-medium w-10 text-right" style="color:${c}">${pct.toFixed(0)}%</span>
-        </div>
-      </div>`;
+      return '<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:12px;color:#475569;margin-bottom:4px"><span>'+r.keyResult+'</span><span style="font-weight:600">'+r.actual+r.unit+' / '+r.target+r.unit+'</span></div><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;background:#f1f5f9;border-radius:999px;height:8px;overflow:hidden"><div style="height:100%;border-radius:999px;background:'+c+';width:'+pct+'%"></div></div><span style="font-size:11px;font-weight:700;width:36px;text-align:right;color:'+c+'">'+pct.toFixed(0)+'%</span></div></div>';
     }).join('');
-    return `<div class="bg-white border border-gray-200 rounded-xl p-4">
-      <div class="flex items-center justify-between mb-3">
-        <h3 class="font-semibold text-gray-800 text-sm">${obj}</h3>
-        <span class="text-xs font-bold px-2 py-0.5 rounded-full" style="background:${color}20;color:${color}">${avg.toFixed(0)}% overall</span>
-      </div>
-      <div class="space-y-3">${bars}</div>
-    </div>`;
+    return '<div class="card"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><h3 style="font-size:14px">'+obj+'</h3><span style="font-size:12px;font-weight:700;padding:2px 10px;border-radius:999px;background:'+color+'22;color:'+color+'">'+avg.toFixed(0)+'% overall</span></div>'+bars+'</div>';
   }).join('');
 }
-
-// ---- Budget Render ----
-function fmt(n){ return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',notation:'compact'}).format(n); }
 
 function renderBudget(){
   if(!state.budget.length) return;
   document.getElementById('budget-section').classList.remove('hidden');
-  document.getElementById('budget-insight').textContent=INSIGHTS.budgetInsight;
+  document.getElementById('budget-insight').textContent='Total spend came in $26K over budget (+3.8%). Engineering (+$23K) and Operations (+$11K) were the largest overruns. Marketing saved $12K, providing partial offset.';
 
   const totalB=state.budget.reduce((s,b)=>s+b.budgeted,0);
   const totalA=state.budget.reduce((s,b)=>s+b.actual,0);
   const totalV=totalA-totalB;
 
-  document.getElementById('budget-cards').innerHTML=[
-    {label:'Total Budgeted',value:totalB,cls:'text-gray-700'},
-    {label:'Total Actual',value:totalA,cls:'text-gray-700'},
-    {label:'Net Variance',value:totalV,cls:totalV<=0?'text-emerald-600':'text-red-500'},
-  ].map(c=>`<div class="bg-white border border-gray-200 rounded-xl p-4 text-center">
-    <p class="text-xs text-gray-500 mb-1">${c.label}</p>
-    <p class="text-lg font-bold ${c.cls}">${fmt(c.value)}</p>
-  </div>`).join('');
+  document.getElementById('budget-summary').innerHTML=[
+    {label:'Total Budgeted',value:totalB,color:'#1e293b'},
+    {label:'Total Actual',value:totalA,color:'#1e293b'},
+    {label:'Net Variance',value:totalV,color:totalV<=0?'#16a34a':'#dc2626'}
+  ].map(c=>'<div class="summary-card"><div class="label">'+c.label+'</div><div class="big-num" style="color:'+c.color+'">'+fmtC(c.value)+'</div></div>').join('');
 
-  const labels=state.budget.map(b=>b.category);
-  const variances=state.budget.map(b=>b.actual-b.budgeted);
-  const colors=variances.map(v=>v<=0?'#10b981':'#f87171');
-
-  if(budgetChart) budgetChart.destroy();
-  budgetChart=new Chart(document.getElementById('budget-chart'),{
-    type:'bar',
-    data:{labels,datasets:[{label:'Variance ($)',data:variances,backgroundColor:colors,borderRadius:4}]},
-    options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:false}}}
-  });
+  svgVarianceBars(
+    document.getElementById('budget-svg'),
+    state.budget.map(b=>b.category),
+    state.budget.map(b=>b.actual-b.budgeted)
+  );
 
   document.getElementById('budget-table').innerHTML=state.budget.map(b=>{
-    const v=b.actual-b.budgeted;
-    const vp=b.budgeted?(v/b.budgeted*100):0;
-    const pos=v<=0;
-    return `<tr class="border-b border-gray-100 hover:bg-gray-50">
-      <td class="p-3 font-medium text-gray-800">${b.category}</td>
-      <td class="p-3 text-right text-gray-600">${fmt(b.budgeted)}</td>
-      <td class="p-3 text-right font-semibold text-gray-800">${fmt(b.actual)}</td>
-      <td class="p-3 text-right font-medium ${pos?'text-emerald-600':'text-red-500'}">${v>0?'+':''}${fmt(v)}</td>
-      <td class="p-3 text-right font-medium ${pos?'text-emerald-600':'text-red-500'}">${vp>0?'+':''}${vp.toFixed(1)}%</td>
-    </tr>`;
+    const v=b.actual-b.budgeted, vp=b.budgeted?(v/b.budgeted*100):0, pos=v<=0;
+    return '<tr><td style="font-weight:600">'+b.category+'</td><td style="text-align:right;color:#64748b">'+fmtC(b.budgeted)+'</td><td style="text-align:right;font-weight:700">'+fmtC(b.actual)+'</td><td style="text-align:right;font-weight:600;color:'+(pos?'#16a34a':'#dc2626')+'">'+(v>0?'+':'')+fmtC(v)+'</td><td style="text-align:right;font-weight:600;color:'+(pos?'#16a34a':'#dc2626')+'">'+(vp>0?'+':'')+vp.toFixed(1)+'%</td></tr>';
   }).join('');
 }
+
 </script>
 </body>
 </html>
